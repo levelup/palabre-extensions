@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Flickr for Palabre</string>
+    <string name="login">Login</string>
+    <string name="oauth_connection_error">Unable to reach Flickr. Please make sure you have a connection</string>
+    <string name="oauth_error">An error occurred during log in. Please try again</string>
+    <string name="add">Add</string>
+    <string name="interesting">Interesting</string>
+    <string name="others">Others</string>
+    <string name="groups">Groups</string>
+    <string name="logout">Logout</string>
+</resources>

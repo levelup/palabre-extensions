@@ -1,1 +1,1 @@
-include ':TheOldReaderForPalabre', ':TwitterForPalabre'
+include ':TheOldReaderForPalabre', ':TwitterForPalabre', ':FlickrForPalabre', ':InoreaderForPalabre'

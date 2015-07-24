@@ -1,3 +1,8 @@
+def includeCrashlytics() {
+    return (project.hasProperty("crashlyticsdemoApisecret")  && project.hasProperty("crashlyticsdemoApikey"))
+}
+
+
 buildscript {
     repositories {
         maven { url 'https://maven.fabric.io/public' }
@@ -8,8 +13,9 @@ buildscript {
     }
 }
 apply plugin: 'com.android.application'
-apply plugin: 'io.fabric'
-
+if (includeCrashlytics()) {
+    apply plugin: 'io.fabric'
+}
 repositories {
     maven {url "http://levelupstudio.com/maven2"}
     maven { url 'https://maven.fabric.io/public' }
@@ -38,8 +44,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 
             // enable crashlytics
-            buildConfigField "boolean", "USE_CRASHLYTICS", "true"
-            ext.enableCrashlytics = true
+            if (includeCrashlytics()) {
+                buildConfigField "boolean", "USE_CRASHLYTICS", "true"
+                ext.enableCrashlytics = true
+            } else {
+                buildConfigField "boolean", "USE_CRASHLYTICS", "false"
+                ext.enableCrashlytics = false
+
+            }
         }
     }
 }
@@ -61,7 +73,9 @@ dependencies {
 
 
 afterEvaluate {
-    initCrashlyticsPropertiesIfNeeded()
+    if (includeCrashlytics()) {
+        initCrashlyticsPropertiesIfNeeded()
+    }
 }
 
 def initCrashlyticsPropertiesIfNeeded() {

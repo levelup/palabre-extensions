@@ -1,17 +1,24 @@
+def includeCrashlytics() {
+    return (project.hasProperty("crashlyticsdemoApisecret")  && project.hasProperty("crashlyticsdemoApikey"))
+}
+
+
 buildscript {
     repositories {
         maven { url 'https://maven.fabric.io/public' }
     }
 
     dependencies {
-        classpath 'io.fabric.tools:gradle:1.+'
+            classpath 'io.fabric.tools:gradle:1.+'
     }
 }
 apply plugin: 'com.android.application'
-apply plugin: 'io.fabric'
+if (includeCrashlytics()) {
+    apply plugin: 'io.fabric'
+}
 
 repositories {
-    maven {url "http://levelupstudio.com/maven2"}
+    maven { url "http://levelupstudio.com/maven2" }
     maven { url 'https://maven.fabric.io/public' }
 
 }
@@ -31,16 +38,22 @@ android {
     buildTypes {
         debug {
             // disable crashlytics
-            buildConfigField "boolean", "USE_CRASHLYTICS", "false"
-            ext.enableCrashlytics = false
+                buildConfigField "boolean", "USE_CRASHLYTICS", "false"
+                ext.enableCrashlytics = false
         }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 
             // enable crashlytics
-            buildConfigField "boolean", "USE_CRASHLYTICS", "true"
-            ext.enableCrashlytics = true
+            if (includeCrashlytics()) {
+                buildConfigField "boolean", "USE_CRASHLYTICS", "true"
+                ext.enableCrashlytics = true
+            } else {
+                buildConfigField "boolean", "USE_CRASHLYTICS", "false"
+                ext.enableCrashlytics = false
+
+            }
         }
     }
 }
@@ -51,13 +64,18 @@ dependencies {
     compile 'com.android.support:design:22.2.0'
     compile 'com.levelup.palabre.api:palabre-api:0.1.12'
     compile 'org.twitter4j:twitter4j-core:4.0.4'
-    compile('com.crashlytics.sdk.android:crashlytics:2.5.0@aar') {
-        transitive = true;
-    }
+        compile('com.crashlytics.sdk.android:crashlytics:2.5.0@aar') {
+            transitive = true;
+        }
 }
 
+
+
+
 afterEvaluate {
-    initCrashlyticsPropertiesIfNeeded()
+    if (includeCrashlytics()) {
+        initCrashlyticsPropertiesIfNeeded()
+    }
 }
 
 def initCrashlyticsPropertiesIfNeeded() {

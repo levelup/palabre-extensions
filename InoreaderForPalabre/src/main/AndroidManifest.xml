@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.levelup.palabre.inoreaderforpalabre" >
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme"
+        android:name=".InoreaderApplication">
+        <activity
+            android:name=".ui.activity.MainActivity"
+            android:label="@string/app_name"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter
+                android:label="@string/add_to_inoreader">
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+
+        </activity>
+
+
+        <provider
+            android:name="com.levelup.palabre.provider.RSSProvider"
+            android:authorities="com.levelup.palabre.inoreaderforpalabre.provider"
+            android:exported="true" />
+
+        <service
+            android:name=".InoreaderExtension"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:permission="com.levelup.palabre.permission.READ_EXTENSION_DATA">
+            <intent-filter>
+                <action android:name="com.levelup.palabre.Extension"/>
+            </intent-filter>
+
+            <meta-data
+                android:name="protocolVersion"
+                android:value="1"/>
+            <meta-data
+                android:name="worldReadable"
+                android:value="true"/>
+            <meta-data
+                android:name="supportSendRead"
+                android:value="true"/>
+            <meta-data
+                android:name="settingsActivity"
+                android:value=".ui.activity.MainActivity"/>
+            <meta-data
+                android:name="authority"
+                android:value="com.levelup.palabre.inoreaderforpalabre.provider"/>
+            <meta-data
+                android:name="extensionicon"
+                android:resource="@drawable/inoreader"/>
+            <meta-data
+                android:name="maxKeptItems"
+                android:value="5000"/>
+        </service>
+
+    </application>
+
+</manifest>

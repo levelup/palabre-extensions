@@ -14,6 +14,7 @@ public class TwitterApplication extends Application {
     public void onCreate() {
         if (BuildConfig.USE_CRASHLYTICS) {
             Fabric.with(this, new Crashlytics());
+            Crashlytics.log("test");
         }
         super.onCreate();
     }
