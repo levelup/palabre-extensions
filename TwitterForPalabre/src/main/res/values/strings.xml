@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Twitter for Palabre</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="login_button">Sign-in with Twitter</string>
+    <string name="welcome">Welcome</string>
+    <string name="intro">This Palabre Provider is read-only and can not update your Twitter account or send Tweets. \n\nPlease use the Twitter website or a Twitter client to do this.</string>
+</resources>

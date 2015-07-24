@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">The Old Reader For Palabre</string>
+
+    <string name="title_activity_login">The Old Reader</string>
+    <string name="button_login">Sign-in</string>
+    <string name="password">Password</string>
+    <string name="username">Email Address</string>
+    <string name="login_error">Email or password incorrect</string>
+    <string name="source_moved" type="id">Source moved</string>
+    <string name="undo">UNDO</string>
+    <string name="removing_uncat_forbidden">You cannot remove the uncategorized folder</string>
+
+    <string name="category_removed">Category removed</string>
+    <string name="source_removed">Source removed from category</string>
+    <string name="unable_to_perform">Unable to perform action</string>
+    <string name="action_logout">Log out</string>
+    <string name="action_add_feed">Add feed</string>
+    <string name="add_feed">Enter an url</string>
+    <string name="add_error">Unable to add the feed</string>
+    <string name="add_to_tor">Add to The Old Reader for Palabre</string>
+
+    <string name="refresh_error">Unable to refresh.%s</string>
+    <string name="refresh_error_connection">Unable to refresh.\nPlease verify your connection</string>
+</resources>
