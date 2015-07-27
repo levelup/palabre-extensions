@@ -347,6 +347,9 @@ public class InoreaderExtension extends PalabreExtension {
                                     return 1;
                                 }
                                 final List<String> orders = sortOrders.get("user/1005688236/state/com.google/root");
+                                if (orders == null) {
+                                    return 0;
+                                }
                                 return orders.indexOf(lhs.getSortid()) - orders.indexOf(rhs.getSortid());
 
                             }
