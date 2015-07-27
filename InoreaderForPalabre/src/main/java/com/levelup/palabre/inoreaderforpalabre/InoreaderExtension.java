@@ -340,6 +340,12 @@ public class InoreaderExtension extends PalabreExtension {
                         Collections.sort(orderedTags, new Comparator<Tag>() {
                             @Override
                             public int compare(Tag lhs, Tag rhs) {
+                                if (lhs.getSortid() == null) {
+                                    return -1;
+                                }
+                                if (rhs.getSortid() == null) {
+                                    return 1;
+                                }
                                 final List<String> orders = sortOrders.get("user/1005688236/state/com.google/root");
                                 return orders.indexOf(lhs.getSortid()) - orders.indexOf(rhs.getSortid());
 
