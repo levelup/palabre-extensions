@@ -1,5 +1,6 @@
 package com.levelup.twitterforpalabre;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -109,6 +110,10 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String userName) {
             if (userName != null) {
                 textWelcome.setText(getResources().getString(R.string.welcome) + " " + userName);
+                Log.d("T4P", "onPostExecute sending palabre://extauth");
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                startActivity(intent);
+                MainActivity.this.finish();
             }
         }
 
@@ -126,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
                     editor.putString(TwitterUtil.PREFERENCE_TWITTER_OAUTH_TOKEN_SECRET, accessToken.getTokenSecret());
                     editor.putBoolean(TwitterUtil.PREFERENCE_TWITTER_IS_LOGGED_IN, true);
                     editor.commit();
+
+
 
                     return twitter.showUser(accessToken.getUserId()).getScreenName();
                 } catch (TwitterException e) {
