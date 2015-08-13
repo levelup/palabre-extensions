@@ -64,9 +64,14 @@ public class FlickrExtension extends PalabreExtension {
     }
 
     @Override
+    protected void onReadArticlesBefore(String s, String s1, long l) {
+        //We do nothing as there is no "read" option on the server
+    }
+
+    @Override
     protected void onSavedArticles(List<String> articles, boolean value) {
 
-        if (BuildConfig.DEBUG) Log.d(TAG, "Marking as saved: "+value+" - "+articles.size());
+        if (BuildConfig.DEBUG) Log.d(TAG, "Marking as saved: " + value + " - " + articles.size());
         for (String article : articles) {
             if (value) {
                 FlickrService.getInstance(FlickrExtension.this).addFavorite(article);

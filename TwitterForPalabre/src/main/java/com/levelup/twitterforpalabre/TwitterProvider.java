@@ -371,6 +371,11 @@ public class TwitterProvider extends PalabreExtension {
     }
 
     @Override
+    protected void onReadArticlesBefore(String s, String s1, long l) {
+
+    }
+
+    @Override
     protected void onSavedArticles(List<String> list, boolean b) {
 
     }

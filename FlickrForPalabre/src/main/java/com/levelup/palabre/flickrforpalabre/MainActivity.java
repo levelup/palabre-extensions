@@ -322,8 +322,10 @@ public class MainActivity extends AppCompatActivity {
                                         editor.putString(SharedPreferenceKeys.LOGIN_URL, response.getPerson().getProfileurl().get_content());
                                         editor.putString(SharedPreferenceKeys.LOGIN_AVATAR, "http://farm" + response.getPerson().getIconfarm() + ".staticflickr.com/" + response.getPerson().getIconserver() + "/buddyicons/" + userLoginResponse.getUser().getId() + ".jpg");
                                         editor.apply();
-                                        adapter.reload();
                                         loadUserSubscriptions();
+                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                                        startActivity(intent);
+                                        MainActivity.this.finish();
                                     }
                                 });
 

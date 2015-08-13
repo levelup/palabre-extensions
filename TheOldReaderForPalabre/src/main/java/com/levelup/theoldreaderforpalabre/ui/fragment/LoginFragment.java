@@ -1,7 +1,9 @@
 package com.levelup.theoldreaderforpalabre.ui.fragment;
 
 import android.app.Fragment;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -75,6 +77,9 @@ public class LoginFragment extends Fragment {
                                         @Override
                                         public void onFinished() {
                                             ((LoginReceivedListener) getActivity()).onLoginReceived();
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                                            startActivity(intent);
+                                            getActivity().finish();
                                         }
 
                                         @Override
