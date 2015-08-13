@@ -307,6 +307,19 @@ public class InoreaderService {
         });
     }
 
+    public void markAsReadBefore(long timestamp, String uniqueId) {
+
+        getServiceStringConverter().markAsReadBefore(timestamp, uniqueId, new Callback<String>() {
+            @Override
+            public void success(String photosResponse, Response response) {
+            }
+
+            @Override
+            public void failure(RetrofitError retrofitError) {
+            }
+        });
+    }
+
     public void markAsSaved(List<String> articles) {
 
         getServiceStringConverter().markAsSaved(getParams(articles), new Callback<String>() {

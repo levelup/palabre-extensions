@@ -43,6 +43,9 @@ public interface InoreaderServiceInterface {
     @POST("/edit-tag?a=user/-/state/com.google/read")
     void markAsRead(@Query("i") List<String> parameters, Callback<String> callback);
 
+    @POST("/mark-all-as-read")
+    void markAsReadBefore(@Query("ts") long timestamp, @Query("s") String stream, Callback<String> callback);
+
     @POST("/edit-tag?r=user/-/state/com.google/read")
     void markAsUnread(@Query("i") List<String> parameters, Callback<String> callback);
 

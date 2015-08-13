@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="palabre-api-0.1.15">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/FlickrForPalabre/build/intermediates/exploded-aar/com.levelup.palabre.api/palabre-api/0.1.15/res" />
+      <root url="jar://$PROJECT_DIR$/FlickrForPalabre/build/intermediates/exploded-aar/com.levelup.palabre.api/palabre-api/0.1.15/jars/classes.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

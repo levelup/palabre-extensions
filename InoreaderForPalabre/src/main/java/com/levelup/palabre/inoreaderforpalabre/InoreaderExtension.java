@@ -109,6 +109,7 @@ public class InoreaderExtension extends PalabreExtension {
 
     /**
      * Refresh the articles.
+     *
      * @param context the Context to use
      */
     private void refreshArticles(final Context context) {
@@ -152,10 +153,11 @@ public class InoreaderExtension extends PalabreExtension {
 
     /**
      * Load a set of articles and return the continuation ID
-     * @param context the Context to use
-     * @param userId the user id used for the request
+     *
+     * @param context      the Context to use
+     * @param userId       the user id used for the request
      * @param savedSources the complete list of sources (cached for better performances)
-     * @param allArticles the complete list of article (cached for better performances)
+     * @param allArticles  the complete list of article (cached for better performances)
      * @param continuation the continuation ID to use
      * @return a continuation ID
      */
@@ -191,7 +193,8 @@ public class InoreaderExtension extends PalabreExtension {
 
     /**
      * Refresh the starred articles
-     * @param userId the user ID to use
+     *
+     * @param userId       the user ID to use
      * @param savedSources the complete list of sources (cached for better performances)
      */
     public void refreshStarredArticles(final String userId, final List<Source> savedSources) {
@@ -225,7 +228,8 @@ public class InoreaderExtension extends PalabreExtension {
 
     /**
      * End the refresh process
-     * @param isFailure is it the result of a failure?
+     *
+     * @param isFailure     is it the result of a failure?
      * @param retrofitError the error sent
      */
     public void endUpdate(boolean isFailure, RetrofitError retrofitError) {
@@ -255,7 +259,8 @@ public class InoreaderExtension extends PalabreExtension {
 
     /**
      * Refresh the categories and sources. This method is static to allow calls from outside of the service.
-     * @param context the Context to be used
+     *
+     * @param context  the Context to be used
      * @param listener a listener that sends the result ad progress back
      */
     public static void refreshCategoriesAndSources(final Context context, final OnCategoryAndSourceRefreshed listener) {
@@ -481,6 +486,7 @@ public class InoreaderExtension extends PalabreExtension {
     /**
      * Get the category for sources having no category on the server.
      * Palabre doesn't show sources without category so we create a fake one named "Uncategorized"
+     *
      * @param context the Context to be used
      * @return the Uncategorized category
      */
@@ -498,8 +504,9 @@ public class InoreaderExtension extends PalabreExtension {
 
     /**
      * Called when articles are read/unread in Palabre and need to be updated on the server
+     *
      * @param articles List of read article unique ids
-     * @param value the read state
+     * @param value    the read state
      */
     @Override
     protected void onReadArticles(List<String> articles, boolean value) {
@@ -513,9 +520,32 @@ public class InoreaderExtension extends PalabreExtension {
     }
 
     /**
+     * Called when articles older than a timestamp are read/unread in Palabre and need to be updated on the server
+     *
+     * @param type     one of "categories", "feeds", "all"
+     * @param uniqueId the id of the feed or category
+     * @param timestamp the timestamp for the limit
+     */
+    @Override
+    protected void onReadArticlesBefore(String type, String uniqueId, long timestamp) {
+        if (BuildConfig.DEBUG)
+            Log.d(TAG, "onReadArticlesBefore for: " + type + " before " + new Date(timestamp) + " with uniqueId" + uniqueId);
+
+        if (type.equals("all")) {
+            uniqueId = "user%2F-%2Fstate%2Fcom.google%2Freading-list";
+        }
+//
+        InoreaderService.getInstance(InoreaderExtension.this).markAsReadBefore(timestamp*1000, uniqueId);
+
+
+
+    }
+
+    /**
      * Called when articles are saved/unsaved in Palabre and need to be updated on the server
+     *
      * @param articles List of saved article unique ids
-     * @param value the saved state
+     * @param value    the saved state
      */
     @Override
     protected void onSavedArticles(List<String> articles, boolean value) {
@@ -529,10 +559,11 @@ public class InoreaderExtension extends PalabreExtension {
 
     /**
      * Transform an Item to an article and add it to a list
-     * @param userId the user ID to check for read/saved states
-     * @param savedSources  the complete list of sources (cached for better performances)
-     * @param articles the list of article to be used
-     * @param item the item that will be added as an Article
+     *
+     * @param userId       the user ID to check for read/saved states
+     * @param savedSources the complete list of sources (cached for better performances)
+     * @param articles     the list of article to be used
+     * @param item         the item that will be added as an Article
      */
     public void addArticleToList(String userId, List<Source> savedSources, List<Article> articles, Item item) {
         long sourceId = -1;

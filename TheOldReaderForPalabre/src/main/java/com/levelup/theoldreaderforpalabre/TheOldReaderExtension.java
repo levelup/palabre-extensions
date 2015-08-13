@@ -665,11 +665,47 @@ public class TheOldReaderExtension extends PalabreExtension {
                     @Override
                     public void onCompleted(Exception e, Response<String> result) {
 
-                        Log.w("TOR", "Sending mark as read/unread: " + result.getHeaders().code());
+                        try {
+                            Log.w("TOR", "Sending mark as read/unread: " + result.getHeaders().code());
+                        } catch (Exception e1) {
+                        }
 
                     }
                 });
 
+    }
+
+    @Override
+    protected void onReadArticlesBefore(String type, String uniqueId, long timestamp) {
+        if (BuildConfig.DEBUG)
+            Log.d(TAG, "onReadArticlesBefore for: " + type + " before " + new Date(timestamp) + " with uniqueId" + uniqueId);
+
+        if (type.equals("all")) {
+            uniqueId = "user%2F-%2Fstate%2Fcom.google%2Freading-list";
+        }
+
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        String authKey = sharedPref.getString(SharedPreferenceKeys.AUTH, null);
+
+        final long timestampNs = timestamp * 1000;
+        Ion.with(this).load("https://theoldreader.com/reader/api/0/mark-all-as-read")
+                .setHeader("Authorization: GoogleLogin auth", authKey)
+                .setBodyParameter("s", uniqueId)
+                .setBodyParameter("ts", String.valueOf(timestampNs))
+                .asString()
+                .withResponse()
+                .setCallback(new FutureCallback<Response<String>>() {
+                    @Override
+                    public void onCompleted(Exception e, Response<String> result) {
+
+                        try {
+                            Log.w("TOR", "Sending mark as read before: " + result.getHeaders().code() +" => "+ result.getResult());
+                        } catch (Exception e1) {
+                        }
+
+                    }
+                });
+//
     }
 
     @Override
