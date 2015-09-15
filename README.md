@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies{
-    compile 'com.levelup.palabre.api:palabre-api:0.1.12'
+    compile 'com.levelup.palabre.api:palabre-api:1.0'
 }
 ```
 

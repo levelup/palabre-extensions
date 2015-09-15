@@ -73,7 +73,7 @@ dependencies {
     compile 'com.github.traex.rippleeffect:library:1.3'
 
 //    compile 'com.levelup.palabre.api:palabre-api:0.1'
-    compile 'com.levelup.palabre.api:palabre-api:0.1.15'
+    compile 'com.levelup.palabre.api:palabre-api:1.0'
     compile('com.crashlytics.sdk.android:crashlytics:2.5.0@aar') {
         transitive = true;
     }

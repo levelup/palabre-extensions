@@ -5,6 +5,8 @@
       <root url="file://$PROJECT_DIR$/InoreaderForPalabre/build/intermediates/exploded-aar/com.github.dmytrodanylyk.circular-progress-button/library/1.1.3/res" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.dmytrodanylyk.circular-progress-button/library/1.1.3/1d3cd05a4921901706b1488c07496bc9f65a028c/library-1.1.3-sources.jar!/" />
+    </SOURCES>
   </library>
 </component>
