@@ -13,11 +13,11 @@ Then he can switch between your extension's content and the Palabre's one.
 
 ```groovy
 repositories {
-maven {url "http://levelupstudio.com/maven2"}
+    maven {url "http://levelupstudio.com/maven2"}
 }
 
 dependencies{
-compile 'com.levelup.palabre.api:palabre-api:0.1.12'
+    compile 'com.levelup.palabre.api:palabre-api:0.1.12'
 }
 ```
 
@@ -27,9 +27,9 @@ The app will request the extension using a `ContentProvider`. You have to declar
 
 ```xml
 <provider
-android:name="com.levelup.palabre.provider.RSSProvider"
-android:authorities="com.example.extension.provider"
-android:exported="true" />
+    android:name="com.levelup.palabre.provider.RSSProvider"
+    android:authorities="com.example.extension.provider"
+    android:exported="true" />
 ```
 
 Palabre and the extension will communicate through a `Service`. You have to declare it this way.
@@ -37,37 +37,36 @@ Palabre and the extension will communicate through a `Service`. You have to decl
 ```xml
 <application ...>
 ...
-<service
-android:name=".MyExtension"
-android:icon="@mipmap/ic_launcher"
-android:label="@string/app_name"
-android:permission="com.levelup.palabre.permission.READ_EXTENSION_DATA">
-<intent-filter>
-<action android:name="com.levelup.palabre.Extension"/>
-</intent-filter>
-
-<meta-data
-android:name="protocolVersion"
-android:value="1"/>
-<meta-data
-android:name="worldReadable"
-android:value="true"/>
-<meta-data
-android:name="supportSendRead"
-android:value="true"/>
-<meta-data
-android:name="settingsActivity"
-android:value=".MainActivity"/>
-<meta-data
-android:name="authority"
-android:value="com.example.extension.provider"/>
-<meta-data
-android:name="extensionicon"
-android:resource="@drawable/my_extension_icon"/>
-<meta-data
-android:name="maxKeptItems"
-android:value="5000"/>
-</service>
+    <service
+        android:name=".MyExtension"
+        android:label="@string/app_name"
+        android:permission="com.levelup.palabre.permission.READ_EXTENSION_DATA">
+        <intent-filter>
+            <action android:name="com.levelup.palabre.Extension"/>
+        </intent-filter>
+    
+        <meta-data
+            android:name="protocolVersion"
+            android:value="1"/>
+        <meta-data
+            android:name="worldReadable"
+            android:value="true"/>
+        <meta-data
+            android:name="supportSendRead"
+            android:value="true"/>
+        <meta-data
+            android:name="settingsActivity"
+            android:value=".MainActivity"/>
+        <meta-data
+            android:name="authority"
+            android:value="com.example.extension.provider"/>
+        <meta-data
+            android:name="extensionicon"
+            android:resource="@drawable/my_extension_icon"/>
+        <meta-data
+            android:name="maxKeptItems"
+            android:value="5000"/>
+    </service>
 </application>
 ```
 
@@ -87,7 +86,7 @@ This points to a class extending ```PalabreExtension``` [see below](#extension-s
 
 `extensionicon` : the icon that will be used to represent your extension's services. See [guidelines](#guidelines)
 
-`Ì€maxKeptItesm`: number of articles that will be kept in database (cannot be higher than 10,000). This is not mandatory. By default Palabre keeps 10,000 articles.
+`maxKeptItems`: number of articles that will be kept in database (cannot be higher than 10,000). This is not mandatory. By default Palabre keeps 10,000 articles.
 
 ### Authority declaration
 
@@ -97,8 +96,19 @@ In order to work, your app should have a `PalabreApiProviderAuthority` in the ``
 package com.levelup.palabre.api.provider;
 
 public class PalabreApiProviderAuthority {
-public static final String CONTENT_AUTHORITY = "com.example.extension.provider";
+    public static final String CONTENT_AUTHORITY = "com.example.extension.provider";
 }
+```
+
+Notice the package. You will have to create the file in the right folder.
+
+### First launch
+
+When the first launch is complete (the user is authenticated for example), you can tell Palabre by sending this `Intent`
+
+```java
+Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+startActivity(intent);
 ```
 
 ### Extension Service
@@ -107,9 +117,9 @@ This service is your extension endpoint to communicate with Palabre. It will be 
 
 ```java
 public class MyExtension extends PalabreExtension {
-@Override
-protected void onUpdateData(int reason, UpdateData updateData) {
-}
+    @Override
+    protected void onUpdateData(int reason, UpdateData updateData) {
+    }
 }
 ```
 
@@ -121,7 +131,7 @@ void publishUpdate(ExtensionData data) //indicates that the update is finished
 
 void publishUpdateStatus(ExtensionUpdateStatus data) //sends the update's status and progress
 
-void publishAccountInfo(ExtensionAccountInfo data) //sends some informations about the users identity (for example his avatar)
+void publishAccountInfo(ExtensionAccountInfo data) //sends some information about the users identity (for example his avatar)
 ```
 
 ### Persist data
@@ -137,25 +147,25 @@ Your data have to follow the following schema.
 // Save multiple sources
 List<Source> sources = new ArrayList<Source>();
 sources.add(new Source()
-.title(subscription.getTitle())
-.dataUrl(subscription.getHtmlUrl())
-.iconUrl(subscription.getIconUrl())
-.uniqueId(subscription.getId())
-.categories(categoryList));
+    .title(subscription.getTitle())
+    .dataUrl(subscription.getHtmlUrl())
+    .iconUrl(subscription.getIconUrl())
+    .uniqueId(subscription.getId())
+    .categories(categoryList));
 Source.multipleSave(context, sources);
 
 // Create and save an article
 Article article = new Article()
-.author(author)
-.content(content)
-.title(title)
-.date(date)
-.image(image)
-.sourceId(source.getId())
-.uniqueId(uniqueId)
-.linkUrl(linkUrl)
-.saved(saved)
-.save(context);
+    .author(author)
+    .content(content)
+    .title(title)
+    .date(date)
+    .image(image)
+    .sourceId(source.getId())
+    .uniqueId(uniqueId)
+    .linkUrl(linkUrl)
+    .saved(saved)
+    .save(context);
 
 // Delete this article
 article.delete(context);
@@ -173,9 +183,8 @@ Palabre launches a Play Store search to display the extension list. If you want 
 
 ### Icon
 
-Two of your icons appear in the app. 
-- The one declared in the `android:icon` of the service node should be your app icon.
-- The one declared in the extensionicon metadata represents the service and should follow the following guideline:
 
-http://romannurik.github.io/AndroidAssetStudio/icons-generic.html#source.type=image&source.space.trim=1&source.space.pad=0&size=52&padding=0&color=000%2C0&name=ic_flickr_extension_icon
 
+You have two icons to design for your app. 
+- Your app icon should follow the Android and Palabre guidelines. Use this [PSD](https://github.com/levelup/palabre-extensions/raw/master/Resources/extensions_icons.psd) to create it.
+- The one declared in the extensionicon metadata represents the service and should follow the [following guideline](https://github.com/levelup/palabre-extensions/raw/master/Resources/extensions_logo.psd).
