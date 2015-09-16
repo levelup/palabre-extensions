@@ -14,10 +14,10 @@ import com.levelup.palabre.api.datamapping.Source;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
 import twitter4j.PagableResponseList;
 import twitter4j.Paging;
+import twitter4j.Query;
+import twitter4j.QueryResult;
 import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -32,17 +32,19 @@ import twitter4j.auth.AccessToken;
 public class TwitterProvider extends PalabreExtension {
 
 
+    public static final String TAG = TwitterProvider.class.getSimpleName();
+    public static final String HOME_UNIQUE_ID = "home";
 
     @Override
     protected void onUpdateData() {
 
-        Log.d("T4P", "Palabre ask for a refresh");
+        if (BuildConfig.DEBUG) Log.d(TAG, "Palabre ask for a refresh");
         publishUpdateStatus(new ExtensionUpdateStatus().start());
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         String accessTokenString = sharedPreferences.getString(TwitterUtil.PREFERENCE_TWITTER_OAUTH_TOKEN, "");
         String accessTokenSecret = sharedPreferences.getString(TwitterUtil.PREFERENCE_TWITTER_OAUTH_TOKEN_SECRET, "");
-        Log.d("T4P", "User is back " + accessTokenString);
+        if (BuildConfig.DEBUG) Log.d(TAG, "User is back " + accessTokenString);
 
         AccessToken accessToken = new AccessToken(accessTokenString, accessTokenSecret);
         TwitterUtil.getInstance().setTwitterFactory(accessToken);
@@ -50,7 +52,7 @@ public class TwitterProvider extends PalabreExtension {
         publishUpdateStatus(new ExtensionUpdateStatus().progress(5));
 
         try {
-            Log.d("T4P", "Getting twitter user info");
+            if (BuildConfig.DEBUG) Log.d(TAG, "Getting twitter user info");
             User user = TwitterUtil.getInstance().getTwitter().showUser(accessToken.getUserId());
             ExtensionAccountInfo account = new ExtensionAccountInfo();
             account.accountName(user.getName());
@@ -66,13 +68,17 @@ public class TwitterProvider extends PalabreExtension {
 
         // create pseudo categories
         ArrayList<Category> categories = new ArrayList<>();
-        if (Category.getByUniqueId(this, "home") == null) {
+        final Category homeCat = Category.getByUniqueId(this, HOME_UNIQUE_ID);
+        if (homeCat == null) {
             Category category = new Category();
-            category.setUniqueId("home");
+            category.setUniqueId(HOME_UNIQUE_ID);
             category.setTitle("Home");
 
             // add it to the list
             categories.add(category);
+        } else {
+            categories.add(homeCat);
+
         }
 
         // create categories for the list
@@ -116,90 +122,25 @@ public class TwitterProvider extends PalabreExtension {
                 paging.setSinceId(lastId);
             }
             try {
-                ArrayList<Source> sources = new ArrayList<>();
                 ResponseList<Status> userListStatuses = TwitterUtil.getInstance().getTwitter().getUserListStatuses(id, paging);
 
-                for (Status status : userListStatuses) {
-                    boolean sourceExistInDb = false;
-                    Source source;
-                    source = Source.getByUniqueId(this, String.valueOf(status.getUser().getId()));
-                    if (source == null) {
-                        source = new Source();
-                        for (Category category : allCategories) {
-                            if (category.getUniqueId().equals(String.valueOf(id))) {
-                                source.getCategories().add(category);
-                            }
-                        }
-                        //source.getCategories().add(Category.getByUniqueId(this, "home"));
-                    } else {
-                        Log.d("T4P", "List: Source is already in db: " + status.getUser().getName());
-                        sourceExistInDb = true;
-
-                    }
-
-                    source.setUniqueId(String.valueOf(status.getUser().getId()));
-                    source.setIconUrl(status.getUser().getProfileImageURL());
-                    source.setTitle(status.getUser().getName());
-
-                    if (sourceExistInDb) {
-                        source.save(this);
-                    } else {
-                        boolean found = false;
-                        for (Source newSource : sources) {
-                            if (newSource.getUniqueId().equals(String.valueOf(status.getUser().getId()))) {
-                                Log.d("T4P", "List: Source is already about to be added and is in temp array: " + status.getUser().getName());
-                                found = true;
-                            }
-                        }
-                        if (!found) {
-                            Log.d("T4P", "List: New source was not in temp array, add it: " + status.getUser().getName());
-                            sources.add(source);
-                        }
+                Category currentCategory = null;
+                for (Category category : allCategories) {
+                    if (category.getUniqueId().equals(String.valueOf(id))) {
+                        currentCategory = category;
                     }
                 }
+                if (currentCategory == null) throw new IllegalStateException("Category cannot be null");
 
-                Source.multipleSave(this, sources);
-                publishUpdateStatus(new ExtensionUpdateStatus().progress(35));
+                saveSources(currentCategory, userListStatuses);
+
+                publishUpdateStatus(new ExtensionUpdateStatus().progress(25));
                 List<Source> sourcesInDB = Source.getAll(this);
 
-                for (Status status : userListStatuses) {
-
-                    //System.out.println(status.getUser().getName() + ":" + status.getText());
-                    Article tweet = new Article();
-                    tweet.setUniqueId(String.valueOf(status.getId()));
-                    tweet.setTitle(status.getText());
-                    tweet.setAuthor("@" + status.getUser().getScreenName());
-                    tweet.setDate(status.getCreatedAt());
-
-                    Log.d("T4P", "List: UniqueID: " + status.getId());
-                    tweet.setUniqueId(String.valueOf(status.getId()));
-                    for (Source source : sourcesInDB) {
-                        if (String.valueOf(status.getUser().getId()).equals(source.getUniqueId())) {
-                            Log.d("T4P", "List: User match! " + status.getUser().getName());
-                            tweet.setSourceId(source.getId());
-
-                        }
-                    }
-
-                    String fullContent = status.getText();
-                    for (URLEntity urlEntity : status.getURLEntities()) {
-                        fullContent += "<a href='"+ urlEntity.getURL() +"'>" +  urlEntity.getExpandedURL() +  "</a></br></br>";
-                    }
-
-                    tweet.setFullContent(fullContent);
-
-                    //tweet.setSourceId(this, String.valueOf(status.getUser().getId()));
-                    if (status.getMediaEntities().length > 0) {
-                        tweet.setImage(status.getMediaEntities()[0].getMediaURL());
-                    }
-                    //tweet.setFullContent(status.getMediaEntities()[0].);
-                    tweet.setLinkUrl("http://twitter.com/" + status.getUser().getScreenName() + "/status/" + status.getId());
-
-                    articles.add(tweet);
-                }
+                saveTweets(articles, userListStatuses, sourcesInDB);
 
                 //Article.multipleSave(this, articles);
-                publishUpdateStatus(new ExtensionUpdateStatus().progress(45));
+                publishUpdateStatus(new ExtensionUpdateStatus().progress(35));
             } catch (TwitterException e) {
                 e.printStackTrace();
             }
@@ -210,14 +151,13 @@ public class TwitterProvider extends PalabreExtension {
             catToRemove.delete(this);
         }*/
 
-        Log.d("T4P", "Now get the twitter home timeline");
+        if (BuildConfig.DEBUG) Log.d(TAG, "Now get the twitter home timeline");
 
         // Home Timeline
 
 
 
         try {
-            ArrayList<Source> sources = new ArrayList<>();
             Paging paging = new Paging().count(200);
             if (lastId > 0) {
                 paging.setSinceId(lastId);
@@ -225,91 +165,74 @@ public class TwitterProvider extends PalabreExtension {
             List<Status> statuses = TwitterUtil.getInstance().getTwitter().getHomeTimeline(paging);
             //ArrayList<Article> articles = new ArrayList<>();
 
-            for (Status status : statuses) {
-                boolean sourceExistInDb = false;
-                Source source;
-                source = Source.getByUniqueId(this, String.valueOf(status.getUser().getId()));
-                if (source == null) {
-                    source = new Source();
-                    source.getCategories().add(Category.getByUniqueId(this, "home"));
-                } else {
-                    Log.d("T4P", "Source is already in db: " + status.getUser().getName());
-                    sourceExistInDb = true;
+            Category category = Category.getByUniqueId(this, HOME_UNIQUE_ID);
+            if (category == null) throw new IllegalStateException("Category cannot be null");
 
-                }
+            publishUpdateStatus(new ExtensionUpdateStatus().progress(45));
+            saveSources(category, statuses);
 
-                source.setUniqueId(String.valueOf(status.getUser().getId()));
-                source.setIconUrl(status.getUser().getProfileImageURL());
-                source.setTitle(status.getUser().getName());
 
-                if (sourceExistInDb) {
-                    source.save(this);
-                } else {
-                    boolean found = false;
-                    for (Source newSource : sources) {
-                        if (newSource.getUniqueId().equals(String.valueOf(status.getUser().getId()))) {
-                            Log.d("T4P", "Source is already about to be added and is in temp array: " + status.getUser().getName());
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        Log.d("T4P", "New source was not in temp array, add it: " + status.getUser().getName());
-                        sources.add(source);
-                    }
-                }
-            }
-
-            Source.multipleSave(this, sources);
-
-            publishUpdateStatus(new ExtensionUpdateStatus().progress(60));
+            publishUpdateStatus(new ExtensionUpdateStatus().progress(55));
 
 
 
             List<Source> sourcesInDB = Source.getAll(this);
-            Log.d("T4P", "Now get the twitter home timeline status and write them in DB");
+            if (BuildConfig.DEBUG) Log.d(TAG, "Now get the twitter home timeline status and write them in DB");
 
-            for (Status status : statuses) {
-                //System.out.println(status.getUser().getName() + ":" + status.getText());
-                Article tweet = new Article();
-                tweet.setUniqueId(String.valueOf(status.getId()));
-                tweet.setTitle(status.getText());
-                tweet.setAuthor("@" + status.getUser().getScreenName());
-                tweet.setDate(status.getCreatedAt());
 
-                Log.d("T4P", "UniqueID: " + status.getId());
-                tweet.setUniqueId(String.valueOf(status.getId()));
-                for (Source source : sourcesInDB) {
-                    if (String.valueOf(status.getUser().getId()).equals(source.getUniqueId())) {
-                        Log.d("T4P", "User match! " + status.getUser().getName());
-                        tweet.setSourceId(source.getId());
+            saveTweets(articles, statuses, sourcesInDB);
 
-                    }
-                }
-
-                String fullContent = "";
-                for (URLEntity urlEntity : status.getURLEntities()) {
-                    fullContent += "<a href='"+ urlEntity.getURL() +"'>" +  urlEntity.getExpandedURL() +  "</a></br></br>";
-                }
-
-                tweet.setFullContent(fullContent);
-
-                //tweet.setSourceId(this, String.valueOf(status.getUser().getId()));
-                if (status.getMediaEntities().length > 0) {
-                    tweet.setImage(status.getMediaEntities()[0].getMediaURL());
-                }
-                //tweet.setFullContent(status.getMediaEntities()[0].);
-                tweet.setLinkUrl("http://twitter.com/" + status.getUser().getScreenName() + "/status/" + status.getId());
-
-                articles.add(tweet);
-            }
 
 
         } catch (TwitterException e) {
             e.printStackTrace();
         }
+
+
+        for (Category category : allCategories) {
+            if (category.getUniqueId().startsWith("s/")) {
+                String search = category.getUniqueId().substring(2);
+                if (BuildConfig.DEBUG) Log.d(TAG, "Search: "+search);
+
+
+                try {
+
+                    Query query = new Query(search);
+                    query.setCount(15);
+                    QueryResult result = TwitterUtil.getInstance().getTwitter().search(query);
+
+                    publishUpdateStatus(new ExtensionUpdateStatus().progress(65));
+
+                    saveSources(category, result.getTweets());
+                    //ArrayList<Article> articles = new ArrayList<>();
+
+
+                    publishUpdateStatus(new ExtensionUpdateStatus().progress(75));
+
+
+
+                    List<Source> sourcesInDB = Source.getAll(this);
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Now get the twitter home timeline status and write them in DB");
+                    saveTweets(articles, result.getTweets(), sourcesInDB);
+
+
+
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }
+
+
+
+
+
+
         // save all what we got
         Article.multipleSave(this, articles);
-        Log.d("T4P", "All articles saved");
+        if (BuildConfig.DEBUG) Log.d(TAG, "All articles saved");
 
         publishUpdateStatus(new ExtensionUpdateStatus().progress(80));
 
@@ -328,26 +251,104 @@ public class TwitterProvider extends PalabreExtension {
             }
 
             if (!found) {
-                Log.d("T4P", "Found user to remove: " + allSource.getTitle());
+                if (BuildConfig.DEBUG) Log.d(TAG, "Found user to remove: " + allSource.getTitle());
                 usersToRemove.add(allSource);
             }
         }
 
         for (Source src : usersToRemove) {
-            Log.d("T4P", "Removing: " + src.getTitle());
+            if (BuildConfig.DEBUG) Log.d(TAG, "Removing: " + src.getTitle());
             src.delete(this);
         }
         publishUpdateStatus(new ExtensionUpdateStatus().progress(100));
-        Log.d("T4P", "Done!");
+        if (BuildConfig.DEBUG) Log.d(TAG, "Done!");
 
         publishUpdateStatus(new ExtensionUpdateStatus().stop());
 
     }
 
+    private void saveTweets(ArrayList<Article> articles, List<Status> userListStatuses, List<Source> sourcesInDB) {
+        for (Status status : userListStatuses) {
+
+            //System.out.println(status.getUser().getName() + ":" + status.getText());
+            Article tweet = new Article();
+            tweet.setUniqueId(String.valueOf(status.getId()));
+            tweet.setTitle(status.getText());
+            tweet.setAuthor("@" + status.getUser().getScreenName());
+            tweet.setDate(status.getCreatedAt());
+
+            if (BuildConfig.DEBUG) Log.d(TAG, "List: UniqueID: " + status.getId());
+            tweet.setUniqueId(String.valueOf(status.getId()));
+            for (Source source : sourcesInDB) {
+                if (String.valueOf(status.getUser().getId()).equals(source.getUniqueId())) {
+                    if (BuildConfig.DEBUG) Log.d(TAG, "List: User match! " + status.getUser().getName());
+                    tweet.setSourceId(source.getId());
+
+                }
+            }
+
+            String fullContent = status.getText();
+            for (URLEntity urlEntity : status.getURLEntities()) {
+                fullContent += "<a href='"+ urlEntity.getURL() +"'>" +  urlEntity.getExpandedURL() +  "</a></br></br>";
+            }
+
+            tweet.setFullContent(fullContent);
+
+            //tweet.setSourceId(this, String.valueOf(status.getUser().getId()));
+            if (status.getMediaEntities().length > 0) {
+                tweet.setImage(status.getMediaEntities()[0].getMediaURL());
+            }
+            //tweet.setFullContent(status.getMediaEntities()[0].);
+            tweet.setLinkUrl("http://twitter.com/" + status.getUser().getScreenName() + "/status/" + status.getId());
+
+            articles.add(tweet);
+        }
+    }
+
+    private void saveSources(Category category, List<Status> userListStatuses) {
+        ArrayList<Source> sources = new ArrayList<>();
+        for (Status status : userListStatuses) {
+            boolean sourceExistInDb = false;
+            Source source;
+            source = Source.getByUniqueId(this, String.valueOf(status.getUser().getId()));
+            if (source == null) {
+                source = new Source();
+                //source.getCategories().add(Category.getByUniqueId(this, "home"));
+            } else {
+                if (BuildConfig.DEBUG) Log.d(TAG, "List: Source is already in db: " + status.getUser().getName());
+                sourceExistInDb = true;
+
+            }
+
+            source.getCategories().add(category);
+            source.setUniqueId(String.valueOf(status.getUser().getId()));
+            source.setIconUrl(status.getUser().getProfileImageURL());
+            source.setTitle(status.getUser().getName());
+
+            if (sourceExistInDb) {
+                source.save(this);
+            } else {
+                boolean found = false;
+                for (Source newSource : sources) {
+                    if (newSource.getUniqueId().equals(String.valueOf(status.getUser().getId()))) {
+                        if (BuildConfig.DEBUG) Log.d(TAG, "List: Source is already about to be added and is in temp array: " + status.getUser().getName());
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    if (BuildConfig.DEBUG) Log.d(TAG, "List: New source was not in temp array, add it: " + status.getUser().getName());
+                    sources.add(source);
+                }
+            }
+        }
+
+        Source.multipleSave(this, sources);
+    }
+
     private void getFriends(AccessToken accessToken, ArrayList<Category> categories, ArrayList<Source> sources, long cursor) throws TwitterException {
 
         PagableResponseList<User> friendsList = TwitterUtil.getInstance().getTwitter().getFriendsList(accessToken.getUserId(), cursor, 50);
-        Log.d("T4P", "Friends: " + friendsList.size());
+        if (BuildConfig.DEBUG) Log.d(TAG, "Friends: " + friendsList.size());
         for (User user : friendsList) {
             Source source = new Source();
             source.getCategories().add(categories.get(0));
@@ -355,13 +356,13 @@ public class TwitterProvider extends PalabreExtension {
             source.setIconUrl(user.getProfileImageURL());
             source.setTitle(user.getName());
             sources.add(source);
-            Log.d("T4P", "Add friend " + user.getName());
+            if (BuildConfig.DEBUG) Log.d(TAG, "Add friend " + user.getName());
         }
         if (friendsList.hasNext()) {
-            Log.d("T4P", "It's better with more friends, let's continue...");
+            if (BuildConfig.DEBUG) Log.d(TAG, "It's better with more friends, let's continue...");
             getFriends(accessToken, categories, sources, friendsList.getNextCursor());
         } else {
-            Log.d("T4P", "No more friends.");
+            if (BuildConfig.DEBUG) Log.d(TAG, "No more friends.");
         }
     }
 

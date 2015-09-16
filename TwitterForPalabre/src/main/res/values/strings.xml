@@ -6,4 +6,11 @@
     <string name="login_button">Sign-in with Twitter</string>
     <string name="welcome">Welcome</string>
     <string name="intro">This Palabre Provider is read-only and can not update your Twitter account or send Tweets. \n\nPlease use the Twitter website or a Twitter client to do this.</string>
+    <string name="manage_searches">Manage searches</string>
+    <string name="search_hint">Search terms</string>
+    <string name="title_activity_manage_searches">Manage searches</string>
+    <string name="search_removed">Search removed</string>
+    <string name="undo">UNDO</string>
+    <string name="search_empty">Tap the + button to add a search</string>
+
 </resources>

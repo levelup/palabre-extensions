@@ -1,6 +1,5 @@
 package com.levelup.twitterforpalabre;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -8,6 +7,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,6 +24,7 @@ import twitter4j.auth.RequestToken;
 public class MainActivity extends AppCompatActivity {
 
     TextView textWelcome;
+    private Toolbar toolbar;
 
 
     @Override
@@ -31,16 +32,27 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         //new File(this.getDatabasePath(RSSSQLiteOpenHelper.getInstance(this).getDbName()).getPath()).delete();
         //DBUtils.exportDBToFile(this);
 
         Button loginButton = (Button) findViewById(R.id.button_login);
         textWelcome = (TextView) findViewById(R.id.text_welcome);
+        Button searchesButton = (Button) findViewById(R.id.manage_searches);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 new TwitterAuthenticateTask().execute();
+            }
+        });
+
+        searchesButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, ManageSearchesActivity.class));
             }
         });
 
@@ -56,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
                 new TwitterGetAccessTokenTask().execute("");
             } else {
                 loginButton.setVisibility(View.VISIBLE);
+                searchesButton.setVisibility(View.GONE);
             }
         }
     }
