@@ -56,7 +56,7 @@
                 android:value="false" />
             <meta-data
                 android:name="settingsActivity"
-                android:value=".MainActivity" />
+                android:value=".ui.activity.MainActivity" />
             <meta-data
                 android:name="authority"
                 android:value="com.levelup.twitterforpalabre.provider" />
