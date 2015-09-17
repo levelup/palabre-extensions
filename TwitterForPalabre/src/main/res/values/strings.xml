@@ -12,5 +12,6 @@
     <string name="search_removed">Search removed</string>
     <string name="undo">UNDO</string>
     <string name="search_empty">Tap the + button to add a search</string>
+    <string name="sync_lists">Synchronize lists</string>
 
 </resources>

@@ -76,75 +76,89 @@ public class TwitterProvider extends PalabreExtension {
 
             // add it to the list
             categories.add(category);
+            category.save(this);
         } else {
             categories.add(homeCat);
 
         }
-
-        // create categories for the list
-        ArrayList<Long> userListsIds = new ArrayList<>();
-        try {
-            ResponseList<UserList> userLists = TwitterUtil.getInstance().getTwitter().getUserLists(accessToken.getUserId());
-
-            for (UserList userList : userLists) {
-                Category listCategory = new Category();
-                listCategory.setTitle(userList.getFullName());
-                listCategory.setUniqueId(String.valueOf(userList.getId()));
-                categories.add(listCategory);
-                userListsIds.add(userList.getId());
-            }
-
-        } catch (TwitterException e) {
-            e.printStackTrace();
-        }
-
-        Category.multipleSave(this, categories);
-
-        List<Category> allCategories = Category.getAll(this);
-
-
-        publishUpdateStatus(new ExtensionUpdateStatus().progress(25));
-
-        // used to know where to start from when getting new tweets
-        List<Article> oldTweets = Article.getAll(this);
-        long lastId = -1;
-        for (Article article : oldTweets) {
-            lastId = Math.max(lastId, Long.valueOf(article.getUniqueId()));
-        }
-
-
+        List<Category> allCategories = null;
+        long lastId = 0;
         ArrayList<Article> articles = new ArrayList<>();
 
-        // Twitter Lists
-        for (long id : userListsIds) {
-            Paging paging = new Paging().count(200);
-            if (lastId > 0) {
-                paging.setSinceId(lastId);
-            }
+
+
+        if (sharedPreferences.getBoolean(SharedPreferencesKeys.SYNC_LISTS, false)) {
+            // create categories for the list
+            ArrayList<Long> userListsIds = new ArrayList<>();
             try {
-                ResponseList<Status> userListStatuses = TwitterUtil.getInstance().getTwitter().getUserListStatuses(id, paging);
+                ResponseList<UserList> userLists = TwitterUtil.getInstance().getTwitter().getUserLists(accessToken.getUserId());
 
-                Category currentCategory = null;
-                for (Category category : allCategories) {
-                    if (category.getUniqueId().equals(String.valueOf(id))) {
-                        currentCategory = category;
-                    }
+                for (UserList userList : userLists) {
+                    Category listCategory = new Category();
+                    listCategory.setTitle(userList.getFullName());
+                    listCategory.setUniqueId(String.valueOf(userList.getId()));
+                    categories.add(listCategory);
+                    userListsIds.add(userList.getId());
                 }
-                if (currentCategory == null) throw new IllegalStateException("Category cannot be null");
 
-                saveSources(currentCategory, userListStatuses);
-
-                publishUpdateStatus(new ExtensionUpdateStatus().progress(25));
-                List<Source> sourcesInDB = Source.getAll(this);
-
-                saveTweets(articles, userListStatuses, sourcesInDB);
-
-                //Article.multipleSave(this, articles);
-                publishUpdateStatus(new ExtensionUpdateStatus().progress(35));
             } catch (TwitterException e) {
                 e.printStackTrace();
             }
 
+            Category.multipleSave(this, categories);
+
+            allCategories = Category.getAll(this);
+
+
+            publishUpdateStatus(new ExtensionUpdateStatus().progress(25));
+
+            // used to know where to start from when getting new tweets
+            List<Article> oldTweets = Article.getAll(this);
+            lastId = -1;
+            for (Article article : oldTweets) {
+                lastId = Math.max(lastId, Long.valueOf(article.getUniqueId()));
+            }
+
+
+
+            // Twitter Lists
+            for (long id : userListsIds) {
+                Paging paging = new Paging().count(200);
+                if (lastId > 0) {
+                    paging.setSinceId(lastId);
+                }
+                try {
+                    ResponseList<Status> userListStatuses = TwitterUtil.getInstance().getTwitter().getUserListStatuses(id, paging);
+
+                    Category currentCategory = null;
+                    for (Category category : allCategories) {
+                        if (category.getUniqueId().equals(String.valueOf(id))) {
+                            currentCategory = category;
+                        }
+                    }
+                    if (currentCategory == null) throw new IllegalStateException("Category cannot be null");
+
+                    saveSources(currentCategory, userListStatuses);
+
+                    publishUpdateStatus(new ExtensionUpdateStatus().progress(25));
+                    List<Source> sourcesInDB = Source.getAll(this);
+
+                    saveTweets(articles, userListStatuses, sourcesInDB);
+
+                    //Article.multipleSave(this, articles);
+                    publishUpdateStatus(new ExtensionUpdateStatus().progress(35));
+                } catch (TwitterException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        } else {
+            allCategories = Category.getAll(this);
+            for (Category category : allCategories) {
+                if (!category.getUniqueId().equals(HOME_UNIQUE_ID) && !category.getUniqueId().startsWith("s/")) {
+                    category.delete(this);
+                }
+            }
         }
         /*// Wipe the old cats
         for (Category catToRemove : Category.getAll(this)) {

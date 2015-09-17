@@ -13,7 +13,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.TextView;
+
+import com.levelup.palabre.api.utils.PalabreUtils;
 
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -25,6 +29,8 @@ public class MainActivity extends AppCompatActivity {
 
     TextView textWelcome;
     private Toolbar toolbar;
+    private View normalContent;
+    private View firstLaunchContainer;
 
 
     @Override
@@ -40,7 +46,30 @@ public class MainActivity extends AppCompatActivity {
 
         Button loginButton = (Button) findViewById(R.id.button_login);
         textWelcome = (TextView) findViewById(R.id.text_welcome);
-        Button searchesButton = (Button) findViewById(R.id.manage_searches);
+
+        firstLaunchContainer = findViewById(R.id.first_launch_container);
+        normalContent = findViewById(R.id.normal_content);
+
+
+        final Switch syncLists = (Switch) findViewById(R.id.sync_lists);
+        View syncListsContainer = findViewById(R.id.sync_lists_container);
+
+        syncLists.setChecked(PreferenceManager.getDefaultSharedPreferences(this).getBoolean(SharedPreferencesKeys.SYNC_LISTS, false));
+        syncLists.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit().putBoolean(SharedPreferencesKeys.SYNC_LISTS, isChecked).apply();
+            }
+        });
+        syncListsContainer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                syncLists.setChecked(!syncLists.isChecked());
+            }
+        });
+
+
+        View manageSearch = findViewById(R.id.manage_search);
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -49,28 +78,48 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        searchesButton.setOnClickListener(new View.OnClickListener() {
+        manageSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(MainActivity.this, ManageSearchesActivity.class));
             }
         });
 
-        Uri uri = getIntent().getData();
+        manageIntent(getIntent());
+    }
+
+    private void manageIntent(Intent intent) {
+        Uri uri = intent.getData();
         if (uri != null && uri.toString().startsWith(TwitterUtil.CALLBACK_URL)) {
             Log.d("T4P", "Callback intent");
             String verifier = uri.getQueryParameter(TwitterUtil.URL_PARAMETER_TWITTER_OAUTH_VERIFIER);
             new TwitterGetAccessTokenTask().execute(verifier);
+            firstLaunchContainer.setVisibility(View.GONE);
+            normalContent.setVisibility(View.VISIBLE);
         } else {
             Log.d("T4P", "No Intent");
             if (isLoggedIn()) {
                 Log.d("T4P", "Reuse saved token");
                 new TwitterGetAccessTokenTask().execute("");
+                firstLaunchContainer.setVisibility(View.GONE);
+                normalContent.setVisibility(View.VISIBLE);
             } else {
-                loginButton.setVisibility(View.VISIBLE);
-                searchesButton.setVisibility(View.GONE);
+                firstLaunchContainer.setVisibility(View.VISIBLE);
+                normalContent.setVisibility(View.GONE);
             }
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        manageIntent(intent);
+        super.onNewIntent(intent);
+    }
+
+    @Override
+    protected void onResume() {
+        PalabreUtils.checkPalabreInstallationAndWarn(this);
+        super.onResume();
     }
 
     private boolean isLoggedIn() {
