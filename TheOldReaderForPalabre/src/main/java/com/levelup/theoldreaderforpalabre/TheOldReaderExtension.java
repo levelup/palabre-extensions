@@ -713,6 +713,7 @@ public class TheOldReaderExtension extends PalabreExtension {
         // https://github.com/theoldreader/api#updating-items
         Log.d("TOR", "Mark as saved items");
 
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String authKey = sharedPref.getString(SharedPreferenceKeys.AUTH, null);
 
         String items = "";
