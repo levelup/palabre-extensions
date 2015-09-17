@@ -1,4 +1,4 @@
-package com.levelup.twitterforpalabre;
+package com.levelup.twitterforpalabre.ui.adapter;
 
 import android.content.Context;
 import android.os.Handler;
@@ -11,6 +11,8 @@ import android.util.Log;
 import android.view.View;
 
 import com.levelup.palabre.api.datamapping.Category;
+import com.levelup.twitterforpalabre.BuildConfig;
+import com.levelup.twitterforpalabre.R;
 
 
 /**

@@ -1,12 +1,7 @@
-package com.levelup.twitterforpalabre;
+package com.levelup.twitterforpalabre.core.twitter;
 
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-import android.util.Log;
+import com.levelup.twitterforpalabre.TwitterKeys;
 
-import java.util.List;
-
-import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;

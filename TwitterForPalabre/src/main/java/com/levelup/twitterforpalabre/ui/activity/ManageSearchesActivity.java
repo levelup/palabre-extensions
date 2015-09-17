@@ -1,4 +1,4 @@
-package com.levelup.twitterforpalabre;
+package com.levelup.twitterforpalabre.ui.activity;
 
 import android.animation.Animator;
 import android.os.Bundle;
@@ -13,8 +13,12 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.View;
 
-import com.levelup.ViewUtils;
+import com.levelup.twitterforpalabre.core.utils.ViewUtils;
 import com.levelup.palabre.api.datamapping.Category;
+import com.levelup.twitterforpalabre.ui.view.EmptyRecyclerView;
+import com.levelup.twitterforpalabre.R;
+import com.levelup.twitterforpalabre.ui.adapter.SearchAdapter;
+import com.levelup.twitterforpalabre.ui.adapter.SearchItemTouchCallback;
 
 public class ManageSearchesActivity extends AppCompatActivity {
 

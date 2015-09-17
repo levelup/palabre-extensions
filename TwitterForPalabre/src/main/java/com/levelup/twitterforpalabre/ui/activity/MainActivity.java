@@ -1,4 +1,4 @@
-package com.levelup.twitterforpalabre;
+package com.levelup.twitterforpalabre.ui.activity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -18,6 +18,9 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.levelup.palabre.api.utils.PalabreUtils;
+import com.levelup.twitterforpalabre.R;
+import com.levelup.twitterforpalabre.core.utils.SharedPreferencesKeys;
+import com.levelup.twitterforpalabre.core.twitter.TwitterUtil;
 
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -27,6 +30,7 @@ import twitter4j.auth.RequestToken;
 
 public class MainActivity extends AppCompatActivity {
 
+    private String TAG = MainActivity.class.getSimpleName();
     TextView textWelcome;
     private Toolbar toolbar;
     private View normalContent;
@@ -91,15 +95,15 @@ public class MainActivity extends AppCompatActivity {
     private void manageIntent(Intent intent) {
         Uri uri = intent.getData();
         if (uri != null && uri.toString().startsWith(TwitterUtil.CALLBACK_URL)) {
-            Log.d("T4P", "Callback intent");
+            Log.d(TAG, "Callback intent");
             String verifier = uri.getQueryParameter(TwitterUtil.URL_PARAMETER_TWITTER_OAUTH_VERIFIER);
             new TwitterGetAccessTokenTask().execute(verifier);
             firstLaunchContainer.setVisibility(View.GONE);
             normalContent.setVisibility(View.VISIBLE);
         } else {
-            Log.d("T4P", "No Intent");
+            Log.d(TAG, "No Intent");
             if (isLoggedIn()) {
-                Log.d("T4P", "Reuse saved token");
+                Log.d(TAG, "Reuse saved token");
                 new TwitterGetAccessTokenTask().execute("");
                 firstLaunchContainer.setVisibility(View.GONE);
                 normalContent.setVisibility(View.VISIBLE);
@@ -172,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String userName) {
             if (userName != null) {
                 textWelcome.setText(getResources().getString(R.string.welcome) + " " + userName);
-                Log.d("T4P", "onPostExecute sending palabre://extauth");
+                Log.d(TAG, "onPostExecute sending palabre://extauth");
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
                 startActivity(intent);
                 MainActivity.this.finish();
@@ -204,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                 String accessTokenString = sharedPreferences.getString(TwitterUtil.PREFERENCE_TWITTER_OAUTH_TOKEN, "");
                 String accessTokenSecret = sharedPreferences.getString(TwitterUtil.PREFERENCE_TWITTER_OAUTH_TOKEN_SECRET, "");
-                Log.d("T4P", "User is back");
+                Log.d(TAG, "User is back");
 
                 AccessToken accessToken = new AccessToken(accessTokenString, accessTokenSecret);
                 TwitterUtil.getInstance().setTwitterFactory(accessToken);

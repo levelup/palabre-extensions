@@ -1,4 +1,4 @@
-package com.levelup;
+package com.levelup.twitterforpalabre.core.utils;
 
 import android.content.Context;
 import android.util.DisplayMetrics;

@@ -10,6 +10,8 @@ import com.levelup.palabre.api.PalabreExtension;
 import com.levelup.palabre.api.datamapping.Article;
 import com.levelup.palabre.api.datamapping.Category;
 import com.levelup.palabre.api.datamapping.Source;
+import com.levelup.twitterforpalabre.core.twitter.TwitterUtil;
+import com.levelup.twitterforpalabre.core.utils.SharedPreferencesKeys;
 
 import java.util.ArrayList;
 import java.util.List;

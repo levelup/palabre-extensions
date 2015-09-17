@@ -1,4 +1,4 @@
-package com.levelup.twitterforpalabre;
+package com.levelup.twitterforpalabre.ui.view;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;

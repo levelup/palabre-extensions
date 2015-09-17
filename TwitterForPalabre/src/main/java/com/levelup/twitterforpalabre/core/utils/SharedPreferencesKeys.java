@@ -1,4 +1,4 @@
-package com.levelup.twitterforpalabre;
+package com.levelup.twitterforpalabre.core.utils;
 
 /**
  * Created by nicolas on 16/09/15.
