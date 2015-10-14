@@ -77,9 +77,13 @@ public class LoginFragment extends Fragment {
                                         @Override
                                         public void onFinished() {
                                             ((LoginReceivedListener) getActivity()).onLoginReceived();
-                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
-                                            startActivity(intent);
-                                            getActivity().finish();
+                                            try {
+                                                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                                                startActivity(intent);
+                                                getActivity().finish();
+                                            } catch (Exception e1) {
+                                                // palabre is not installed or old version
+                                            }
                                         }
 
                                         @Override
