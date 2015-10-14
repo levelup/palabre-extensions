@@ -498,81 +498,86 @@ public class TheOldReaderExtension extends PalabreExtension {
                             // create a list of articles that we will save once everything has been parsed
                             ArrayList<Article> articles = new ArrayList<Article>();
 
-                            JsonArray items = result.get("items").getAsJsonArray();
-                            for (int i = 0; i < items.size(); i++) {
-                                String id = null;
-                                String title = null;
-                                String author = null;
-                                String summary = null;
-                                String link = null;
-                                long date = 0;
-                                String sourceUniqueId = null;
-                                try {
-                                    id = items.get(i).getAsJsonObject().get("id").getAsString();
-                                    title = items.get(i).getAsJsonObject().get("title").getAsString();
-                                    author = items.get(i).getAsJsonObject().get("author").getAsString();
-                                    summary = items.get(i).getAsJsonObject().get("summary").getAsJsonObject().get("content").getAsString();
-                                    link = items.get(i).getAsJsonObject().get("canonical").getAsJsonArray().get(0).getAsJsonObject().get("href").getAsString();
-                                    date = items.get(i).getAsJsonObject().get("crawlTimeMsec").getAsLong();
+                            JsonElement itemsElement = result.get("items");
 
-                                    if (items.get(i).getAsJsonObject().get("origin")!= null) {
-                                        sourceUniqueId = items.get(i).getAsJsonObject().get("origin").getAsJsonObject().get("streamId").getAsString();
+                            if (itemsElement != null) {
+                                JsonArray items = result.get("items").getAsJsonArray();
+                                for (int i = 0; i < items.size(); i++) {
+                                    String id = null;
+                                    String title = null;
+                                    String author = null;
+                                    String summary = null;
+                                    String link = null;
+                                    long date = 0;
+                                    String sourceUniqueId = null;
+                                    try {
+                                        id = items.get(i).getAsJsonObject().get("id").getAsString();
+                                        title = items.get(i).getAsJsonObject().get("title").getAsString();
+                                        author = items.get(i).getAsJsonObject().get("author").getAsString();
+                                        summary = items.get(i).getAsJsonObject().get("summary").getAsJsonObject().get("content").getAsString();
+                                        link = items.get(i).getAsJsonObject().get("canonical").getAsJsonArray().get(0).getAsJsonObject().get("href").getAsString();
+                                        date = items.get(i).getAsJsonObject().get("crawlTimeMsec").getAsLong();
+
+                                        if (items.get(i).getAsJsonObject().get("origin") != null) {
+                                            sourceUniqueId = items.get(i).getAsJsonObject().get("origin").getAsJsonObject().get("streamId").getAsString();
+                                        }
+                                    } catch (NullPointerException e1) {
+                                        endService(e1);
+                                        return;
                                     }
-                                } catch (NullPointerException e1) {
-                                    endService(e1);
-                                    return;
-                                }
 
-                                Article starred = new Article();
-                                starred.setUniqueId(id);
-                                starred.setTitle(title);
-                                starred.setAuthor(author);
-                                starred.setLinkUrl(link);
-                                starred.setFullContent(summary);
-                                starred.setDate(new Date(date));
+                                    Article starred = new Article();
+                                    starred.setUniqueId(id);
+                                    starred.setTitle(title);
+                                    starred.setAuthor(author);
+                                    starred.setLinkUrl(link);
+                                    starred.setFullContent(summary);
+                                    starred.setDate(new Date(date));
 
-                                // this is how we mark them as starred in Palabre
-                                starred.setSaved(true);
+                                    // this is how we mark them as starred in Palabre
+                                    starred.setSaved(true);
 
 
-                                // we need the Palabre internal id for the source
-                                long sourceId = 0;
-                                for (Source source : sources) {
-                                    if (source.getUniqueId().equals(sourceUniqueId)) {
-                                        sourceId = source.getId();
-                                    }
-                                }
-
-
-                                starred.setSourceId(sourceId);
-
-                                // find a picture within the article/summary using Jsoup.
-                                // Some API/Services provides the picture directly, but that's not the case here
-                                Document doc = Jsoup.parse(starred.getFullContent());
-                                String image = null;
-                                for (Element el : doc.select("img")) {
-                                    //Log.d("TOR", "Image: " + el.attr("src"));
-                                    // filter a few pictures that has not relation with the article
-                                    if (!el.attr("src").contains("feeds.feedburner.com") && !el.attr("src").contains("feedsportal.com")) {
-                                        // use the first one
-                                        if (image == null) {
-                                            image = el.attr("src");
+                                    // we need the Palabre internal id for the source
+                                    long sourceId = 0;
+                                    for (Source source : sources) {
+                                        if (source.getUniqueId().equals(sourceUniqueId)) {
+                                            sourceId = source.getId();
                                         }
                                     }
+
+
+                                    starred.setSourceId(sourceId);
+
+                                    // find a picture within the article/summary using Jsoup.
+                                    // Some API/Services provides the picture directly, but that's not the case here
+                                    Document doc = Jsoup.parse(starred.getFullContent());
+                                    String image = null;
+                                    for (Element el : doc.select("img")) {
+                                        //Log.d("TOR", "Image: " + el.attr("src"));
+                                        // filter a few pictures that has not relation with the article
+                                        if (!el.attr("src").contains("feeds.feedburner.com") && !el.attr("src").contains("feedsportal.com")) {
+                                            // use the first one
+                                            if (image == null) {
+                                                image = el.attr("src");
+                                            }
+                                        }
+                                    }
+
+                                    starred.setImage(image);
+
+                                    articles.add(starred);
+
                                 }
 
-                                starred.setImage(image);
+                                publishUpdateStatus(new ExtensionUpdateStatus().progress(82));
 
-                                articles.add(starred);
-
+                                // Save them into Palabre
+                                Article.multipleSave(TheOldReaderExtension.this, articles);
                             }
 
-                            publishUpdateStatus(new ExtensionUpdateStatus().progress(82));
+                                publishUpdateStatus(new ExtensionUpdateStatus().progress(85));
 
-                            // Save them into Palabre
-                            Article.multipleSave(TheOldReaderExtension.this, articles);
-
-                            publishUpdateStatus(new ExtensionUpdateStatus().progress(85));
                             fetchReads(authKey);
                         } else {
                             endService(e);
