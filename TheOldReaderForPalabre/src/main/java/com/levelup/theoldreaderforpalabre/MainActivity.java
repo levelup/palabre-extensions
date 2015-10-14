@@ -247,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements LoginReceivedList
                 .setCallback(new FutureCallback<JsonObject>() {
                     @Override
                     public void onCompleted(Exception e, JsonObject result) {
-                            if (e != null || result.get("numResults").getAsInt() > 0) {
+                            if (e != null || ( result.get("numResults") != null && result.get("numResults").getAsInt() > 0)) {
                                 TheOldReaderExtension.fetchCategories(MainActivity.this, authKey, new TheOldReaderExtension.OnCategoryAndSourceRefreshed() {
                                     @Override
                                     public void onFinished() {
