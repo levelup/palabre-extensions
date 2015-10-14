@@ -13,5 +13,5 @@
     <string name="undo">UNDO</string>
     <string name="search_empty">Tap the + button to add a search</string>
     <string name="sync_lists">Synchronize lists</string>
-
+    <string name="intent_error">Palabre is not installed, this app requires Palabre to run.</string>
 </resources>

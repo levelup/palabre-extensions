@@ -83,6 +83,7 @@ public class LoginFragment extends Fragment {
                                                 getActivity().finish();
                                             } catch (Exception e1) {
                                                 // palabre is not installed or old version
+                                                Snackbar.make(signinButton, R.string.intent_error, Snackbar.LENGTH_LONG).show();
                                             }
                                         }
 

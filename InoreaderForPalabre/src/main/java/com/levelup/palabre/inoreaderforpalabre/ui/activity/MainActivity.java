@@ -166,9 +166,14 @@ public class MainActivity extends AppCompatActivity {
                                             public void onFinished() {
                                                 initList();
                                                 loginButton.setProgress(0);
-                                                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
-                                                startActivity(intent);
-                                                MainActivity.this.finish();
+                                                try {
+                                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                                                    startActivity(intent);
+                                                    MainActivity.this.finish();
+                                                } catch (Exception e) {
+                                                    // Palabre is not installed
+                                                    Snackbar.make(loginButton, R.string.intent_error, Snackbar.LENGTH_LONG).show();
+                                                }
                                             }
 
                                             @Override

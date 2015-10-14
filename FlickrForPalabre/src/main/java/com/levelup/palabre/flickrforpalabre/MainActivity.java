@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -323,9 +324,15 @@ public class MainActivity extends AppCompatActivity {
                                         editor.putString(SharedPreferenceKeys.LOGIN_AVATAR, "http://farm" + response.getPerson().getIconfarm() + ".staticflickr.com/" + response.getPerson().getIconserver() + "/buddyicons/" + userLoginResponse.getUser().getId() + ".jpg");
                                         editor.apply();
                                         loadUserSubscriptions();
-                                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
-                                        startActivity(intent);
-                                        MainActivity.this.finish();
+                                        try {
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                                            startActivity(intent);
+                                            MainActivity.this.finish();
+                                        } catch (Exception e) {
+                                            // Palabre not installed or old version
+                                            Toast.makeText(MainActivity.this, getString(R.string.intent_error), Toast.LENGTH_LONG).show();
+
+                                        }
                                     }
                                 });
 

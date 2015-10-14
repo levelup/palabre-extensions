@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
     private View normalContent;
     private View firstLaunchContainer;
+    Button loginButton;
 
 
     @Override
@@ -48,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         //new File(this.getDatabasePath(RSSSQLiteOpenHelper.getInstance(this).getDbName()).getPath()).delete();
         //DBUtils.exportDBToFile(this);
 
-        Button loginButton = (Button) findViewById(R.id.button_login);
+        loginButton = (Button) findViewById(R.id.button_login);
         textWelcome = (TextView) findViewById(R.id.text_welcome);
 
         firstLaunchContainer = findViewById(R.id.first_launch_container);
@@ -177,9 +179,14 @@ public class MainActivity extends AppCompatActivity {
             if (userName != null) {
                 textWelcome.setText(getResources().getString(R.string.welcome) + " " + userName);
                 Log.d(TAG, "onPostExecute sending palabre://extauth");
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
-                startActivity(intent);
-                MainActivity.this.finish();
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                    startActivity(intent);
+                    MainActivity.this.finish();
+                } catch (Exception e) {
+                    // palabre not installed or too old
+                    Snackbar.make(loginButton, R.string.intent_error, Snackbar.LENGTH_LONG).show();
+                }
             }
         }
 

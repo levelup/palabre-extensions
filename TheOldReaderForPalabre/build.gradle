@@ -23,13 +23,13 @@ repositories {
 
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "23.0.0 rc3"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
 
     defaultConfig {
         applicationId "com.levelup.theoldreaderforpalabre"
-        minSdkVersion 15
-        targetSdkVersion 22
+        minSdkVersion 16
+        targetSdkVersion 23
         versionCode Integer.parseInt(APP_VERSION_CODE)
         versionName APP_VERSION_NAME
     }

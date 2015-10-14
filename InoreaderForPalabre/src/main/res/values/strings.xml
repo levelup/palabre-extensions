@@ -24,4 +24,5 @@
     <string name="add_to_inoreader">Add to Inoreader for Palabre</string>
     <string name="refresh_error">Unable to refresh.%s</string>
     <string name="refresh_error_connection">Unable to refresh.\nPlease verify your connection</string>
+    <string name="intent_error">Palabre is not installed, this app requires Palabre to run.</string>
 </resources>
