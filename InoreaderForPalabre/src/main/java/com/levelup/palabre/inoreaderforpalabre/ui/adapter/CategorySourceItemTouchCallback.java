@@ -84,7 +84,7 @@ public class CategorySourceItemTouchCallback extends ItemTouchHelper.SimpleCallb
                 if (BuildConfig.DEBUG) Log.d(TAG, "Drag ended for source: "+initialSource+" from "+initialCategory+" to "+ newCategory);
 
 
-                if (!initialCategory.equals(newCategory)) {
+                if (newCategory != null && !initialCategory.equals(newCategory)) {
                     Snackbar.make(recyclerView, R.string.source_moved, Snackbar.LENGTH_LONG).setAction(R.string.undo, new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
