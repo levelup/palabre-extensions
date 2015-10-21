@@ -360,15 +360,17 @@ public class FlickrExtension extends PalabreExtension {
 
                 Set<Source> sources = new HashSet<>();
 
-                for (Contact contact : response.getContacts().getContact()) {
+                if (response.getContacts() != null) {
+                    for (Contact contact : response.getContacts().getContact()) {
 
-                    Source source = new Source()
-                            .title(contact.getUsername())
-                            .iconUrl("http://farm" + contact.getIconfarm() + ".staticflickr.com/" + contact.getIconserver() + "/buddyicons/" + contact.getNsid() + ".jpg")
-                            .uniqueId(contact.getNsid())
-                            .categories(categories);
-                    sources.add(source);
+                        Source source = new Source()
+                                .title(contact.getUsername())
+                                .iconUrl("http://farm" + contact.getIconfarm() + ".staticflickr.com/" + contact.getIconserver() + "/buddyicons/" + contact.getNsid() + ".jpg")
+                                .uniqueId(contact.getNsid())
+                                .categories(categories);
+                        sources.add(source);
 
+                    }
                 }
 
                 Source.multipleSave(context, sources);
