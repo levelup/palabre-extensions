@@ -12,13 +12,16 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.text.Html;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import com.dd.CircularProgressButton;
 import com.levelup.palabre.api.datamapping.Category;
@@ -92,6 +95,10 @@ public class MainActivity extends AppCompatActivity {
                 addFeed();
             }
         });
+
+        TextView explanation = (TextView) findViewById(R.id.auth_explanation);
+        explanation.setText(Html.fromHtml(getString(R.string.auth_explanation)));
+        explanation.setMovementMethod(LinkMovementMethod.getInstance());
 
 
         loginButton.setOnClickListener(new View.OnClickListener() {

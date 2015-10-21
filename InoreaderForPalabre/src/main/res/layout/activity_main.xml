@@ -109,6 +109,11 @@
             app:cpb_iconError="@drawable/ic_action_cancel"
             app:cpb_selectorIdle="@drawable/progress_button"
             app:cpb_colorProgress="@android:color/transparent"/>
+        <TextView
+            android:layout_marginTop="8dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/auth_explanation"/>
     </LinearLayout>
     <!--</android.support.v4.widget.NestedScrollView>-->
 
