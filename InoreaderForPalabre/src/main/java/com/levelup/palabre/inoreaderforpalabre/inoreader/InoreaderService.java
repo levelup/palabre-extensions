@@ -268,19 +268,11 @@ public class InoreaderService {
         });
     }
 
-    public void markAsRead(List<String> articles) {
+    public void markAsRead(List<String> articles, Callback<String> listener) {
 
 
 
-        getServiceStringConverter().markAsRead(getParams(articles), new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-            }
-        });
+        getServiceStringConverter().markAsRead(getParams(articles), listener);
 
     }
 
@@ -294,30 +286,14 @@ public class InoreaderService {
         return params;
     }
 
-    public void markAsUnread(List<String> articles) {
+    public void markAsUnread(List<String> articles, Callback<String> listener) {
 
-        getServiceStringConverter().markAsUnread(getParams(articles), new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-            }
-        });
+        getServiceStringConverter().markAsUnread(getParams(articles), listener);
     }
 
-    public void markAsReadBefore(long timestamp, String uniqueId) {
+    public void markAsReadBefore(long timestamp, String uniqueId, Callback<String> listener) {
 
-        getServiceStringConverter().markAsReadBefore(timestamp, uniqueId, new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-            }
-        });
+        getServiceStringConverter().markAsReadBefore(timestamp, uniqueId, listener);
     }
 
     public void markAsSaved(List<String> articles) {

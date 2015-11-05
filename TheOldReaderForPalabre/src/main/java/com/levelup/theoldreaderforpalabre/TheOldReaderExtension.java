@@ -634,7 +634,7 @@ public class TheOldReaderExtension extends PalabreExtension {
     }
 
     @Override
-    protected void onReadArticles(List<String> uniqueIdsList, boolean read) {
+    protected void onReadArticles(final List<String> uniqueIdsList, final boolean read) {
         // https://github.com/theoldreader/api#updating-items
         Log.d("TOR", "Mark as read items");
 
@@ -670,6 +670,11 @@ public class TheOldReaderExtension extends PalabreExtension {
                     @Override
                     public void onCompleted(Exception e, Response<String> result) {
 
+                        if (e != null) {
+                            Log.w("TOR", "Sending mark as read/unread failed ");
+                            onReadArticlesFailed(uniqueIdsList, read);
+                        }
+
                         try {
                             Log.w("TOR", "Sending mark as read/unread: " + result.getHeaders().code());
                         } catch (Exception e1) {
@@ -681,7 +686,7 @@ public class TheOldReaderExtension extends PalabreExtension {
     }
 
     @Override
-    protected void onReadArticlesBefore(String type, String uniqueId, long timestamp) {
+    protected void onReadArticlesBefore(final String type, String uniqueId, final long timestamp) {
         if (BuildConfig.DEBUG)
             Log.d(TAG, "onReadArticlesBefore for: " + type + " before " + new Date(timestamp) + " with uniqueId" + uniqueId);
 
@@ -693,6 +698,7 @@ public class TheOldReaderExtension extends PalabreExtension {
         String authKey = sharedPref.getString(SharedPreferenceKeys.AUTH, null);
 
         final long timestampNs = timestamp * 1000;
+        final String finalUniqueId = uniqueId;
         Ion.with(this).load("https://theoldreader.com/reader/api/0/mark-all-as-read")
                 .setHeader("Authorization: GoogleLogin auth", authKey)
                 .setBodyParameter("s", uniqueId)
@@ -702,6 +708,10 @@ public class TheOldReaderExtension extends PalabreExtension {
                 .setCallback(new FutureCallback<Response<String>>() {
                     @Override
                     public void onCompleted(Exception e, Response<String> result) {
+
+                        if (e != null) {
+                            onReadArticlesBeforeFailed(type, finalUniqueId, timestamp);
+                        }
 
                         try {
                             Log.w("TOR", "Sending mark as read before: " + result.getHeaders().code() +" => "+ result.getResult());

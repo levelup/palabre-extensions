@@ -44,7 +44,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import retrofit.Callback;
 import retrofit.RetrofitError;
+import retrofit.client.Response;
 
 /**
  * Created by nicolas on 01/06/15.
@@ -509,13 +511,33 @@ public class InoreaderExtension extends PalabreExtension {
      * @param value    the read state
      */
     @Override
-    protected void onReadArticles(List<String> articles, boolean value) {
+    protected void onReadArticles(final List<String> articles, final boolean value) {
         if (BuildConfig.DEBUG) Log.d(TAG, "Reading articles: " + articles.size() + " => " + value);
         if (value) {
-            InoreaderService.getInstance(InoreaderExtension.this).markAsRead(articles);
+            InoreaderService.getInstance(InoreaderExtension.this).markAsRead(articles, new Callback<String>() {
+                @Override
+                public void success(String s, Response response) {
+
+                }
+
+                @Override
+                public void failure(RetrofitError error) {
+                    onReadArticlesFailed(articles, value);
+                }
+            });
         } else {
 
-            InoreaderService.getInstance(InoreaderExtension.this).markAsUnread(articles);
+            InoreaderService.getInstance(InoreaderExtension.this).markAsUnread(articles, new Callback<String>() {
+                @Override
+                public void success(String s, Response response) {
+
+                }
+
+                @Override
+                public void failure(RetrofitError error) {
+                    onReadArticlesFailed(articles, value);
+                }
+            });
         }
     }
 
@@ -527,7 +549,7 @@ public class InoreaderExtension extends PalabreExtension {
      * @param timestamp the timestamp for the limit
      */
     @Override
-    protected void onReadArticlesBefore(String type, String uniqueId, long timestamp) {
+    protected void onReadArticlesBefore(final String type, String uniqueId, final long timestamp) {
         if (BuildConfig.DEBUG)
             Log.d(TAG, "onReadArticlesBefore for: " + type + " before " + new Date(timestamp) + " with uniqueId" + uniqueId);
 
@@ -535,7 +557,19 @@ public class InoreaderExtension extends PalabreExtension {
             uniqueId = "user%2F-%2Fstate%2Fcom.google%2Freading-list";
         }
 //
-        InoreaderService.getInstance(InoreaderExtension.this).markAsReadBefore(timestamp*1000, uniqueId);
+        final String finalUniqueId = uniqueId;
+        InoreaderService.getInstance(InoreaderExtension.this).markAsReadBefore(timestamp * 1000, uniqueId, new Callback<String>() {
+            @Override
+            public void success(String s, Response response) {
+
+            }
+
+            @Override
+            public void failure(RetrofitError error) {
+                onReadArticlesBeforeFailed(type, finalUniqueId, timestamp);
+
+            }
+        });
 
 
 
@@ -549,6 +583,7 @@ public class InoreaderExtension extends PalabreExtension {
      */
     @Override
     protected void onSavedArticles(List<String> articles, boolean value) {
+        if (BuildConfig.DEBUG) Log.d(TAG, "onSavedArticles");
         if (value) {
             InoreaderService.getInstance(InoreaderExtension.this).markAsSaved(articles);
         } else {
