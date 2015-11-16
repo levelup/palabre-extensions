@@ -1,6 +1,8 @@
 package com.levelup.twitterforpalabre.core.twitter;
 
 
+import com.levelup.twitterforpalabre.TwitterKeys;
+
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;

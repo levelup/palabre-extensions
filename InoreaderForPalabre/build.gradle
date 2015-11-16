@@ -19,7 +19,6 @@ if (includeCrashlytics()) {
 repositories {
     maven {url "http://levelupstudio.com/maven2"}
     maven { url 'https://maven.fabric.io/public' }
-    mavenLocal()
 }
 
 android {
@@ -64,7 +63,7 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:23.1.0'
     compile 'com.android.support:cardview-v7:23.1.0'
 
-    compile 'com.levelup.palabre.api:palabre-api:1.1.0-alpha2'
+    compile 'com.levelup.palabre.api:palabre-api:1.1.0'
 
     compile 'com.jakewharton:butterknife:6.1.0'
 
