@@ -179,7 +179,9 @@ List<Source> sources = Source.getAll(context);
 
 ### Name
 
-Palabre launches a Play Store search to display the extension list. If you want to appear in this list, please make sure your app ends with "for Palabre".
+Palabre contact our servers to get the most up-to-date extension list, which will then redirect to the Play Store so the user can install the extension. To avoid any confusion, you should name you extension is named as such:
+"Palabre for" + name of the service.
+
 
 ### Icon
 
