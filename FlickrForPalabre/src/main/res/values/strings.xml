@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Flickr for Palabre</string>
+    <string name="app_name">Palabre for Flickr</string>
     <string name="login">Login</string>
     <string name="oauth_connection_error">Unable to reach Flickr. Please make sure you have a connection</string>
     <string name="oauth_error">An error occurred during log in. Please try again</string>
