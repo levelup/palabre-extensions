@@ -36,10 +36,16 @@ public class TwitterProvider extends PalabreExtension {
 
     public static final String TAG = TwitterProvider.class.getSimpleName();
     public static final String HOME_UNIQUE_ID = "home";
+    private boolean refreshPending;
 
     @Override
     protected void onUpdateData() {
 
+        if (refreshPending) {
+            return;
+        }
+
+        refreshPending = true;
         if (BuildConfig.DEBUG) Log.d(TAG, "Palabre ask for a refresh");
         publishUpdateStatus(new ExtensionUpdateStatus().start());
 
@@ -280,6 +286,7 @@ public class TwitterProvider extends PalabreExtension {
         if (BuildConfig.DEBUG) Log.d(TAG, "Done!");
 
         publishUpdateStatus(new ExtensionUpdateStatus().stop());
+        refreshPending = false;
 
     }
 
@@ -293,11 +300,11 @@ public class TwitterProvider extends PalabreExtension {
             tweet.setAuthor("@" + status.getUser().getScreenName());
             tweet.setDate(status.getCreatedAt());
 
-            if (BuildConfig.DEBUG) Log.d(TAG, "List: UniqueID: " + status.getId());
+//            if (BuildConfig.DEBUG) Log.d(TAG, "List: UniqueID: " + status.getId());
             tweet.setUniqueId(String.valueOf(status.getId()));
             for (Source source : sourcesInDB) {
                 if (String.valueOf(status.getUser().getId()).equals(source.getUniqueId())) {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "List: User match! " + status.getUser().getName());
+//                    if (BuildConfig.DEBUG) Log.d(TAG, "List: User match! " + status.getUser().getName());
                     tweet.setSourceId(source.getId());
 
                 }
@@ -331,7 +338,7 @@ public class TwitterProvider extends PalabreExtension {
                 source = new Source();
                 //source.getCategories().add(Category.getByUniqueId(this, "home"));
             } else {
-                if (BuildConfig.DEBUG) Log.d(TAG, "List: Source is already in db: " + status.getUser().getName());
+//                if (BuildConfig.DEBUG) Log.d(TAG, "List: Source is already in db: " + status.getUser().getName());
                 sourceExistInDb = true;
 
             }
