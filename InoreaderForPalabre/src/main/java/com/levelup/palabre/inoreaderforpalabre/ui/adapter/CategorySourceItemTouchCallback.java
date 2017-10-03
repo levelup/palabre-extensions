@@ -203,7 +203,7 @@ public class CategorySourceItemTouchCallback extends ItemTouchHelper.SimpleCallb
             //remove source
 
             final Source source = Source.getByUniqueId(context, lastItemDelete);
-            if (source.getCategories().size() == 1) {
+            if (source.getCategories() != null && source.getCategories().size() == 1) {
                 // removed from last cat
                 if (BuildConfig.DEBUG) Log.d(TAG, "Last one: unsubscribing");
                 InoreaderService.getInstance(context).unsubscribeSource(lastItemDelete, new InoreaderServiceInterface.IRequestListener<String>() {
