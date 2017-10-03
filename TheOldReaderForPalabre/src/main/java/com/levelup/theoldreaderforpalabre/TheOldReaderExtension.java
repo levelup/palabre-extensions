@@ -349,83 +349,86 @@ public class TheOldReaderExtension extends PalabreExtension {
                             // create a list of articles that we will save once everything has been parsed
                             ArrayList<Article> articles = new ArrayList<Article>();
 
-                            JsonArray items = result.get("items").getAsJsonArray();
-                            for (int i = 0; i < items.size(); i++) {
+                            JsonElement itemsJ = result.get("items");
+                            if (itemsJ != null) {
+                                JsonArray items = itemsJ.getAsJsonArray();
+                                for (int i = 0; i < items.size(); i++) {
 
-                                String id = items.get(i).getAsJsonObject().get("id").getAsString();
-                                long date = items.get(i).getAsJsonObject().get("crawlTimeMsec").getAsLong();
+                                    String id = items.get(i).getAsJsonObject().get("id").getAsString();
+                                    long date = items.get(i).getAsJsonObject().get("crawlTimeMsec").getAsLong();
 
-                                boolean found = false;
-                                for (Article article : allArticles) {
-                                    if (article.getUniqueId().equals(id) && article.getDate().getTime() == date) {
-                                        found = true;
-                                        break;
+                                    boolean found = false;
+                                    for (Article article : allArticles) {
+                                        if (article.getUniqueId().equals(id) && article.getDate().getTime() == date) {
+                                            found = true;
+                                            break;
+                                        }
+
                                     }
 
-                                }
-
-                                if (found) {
-                                    continue;
-                                }
-
-                                String summary = null;
-                                String title = null;
-                                String author = null;
-                                String link = null;
-                                String sourceUniqueId = null;
-                                try {
-                                    summary = items.get(i).getAsJsonObject().get("summary").getAsJsonObject().get("content").getAsString();
-                                    title = items.get(i).getAsJsonObject().get("title").getAsString();
-                                    author = items.get(i).getAsJsonObject().get("author").getAsString();
-                                    link = items.get(i).getAsJsonObject().get("canonical").getAsJsonArray().get(0).getAsJsonObject().get("href").getAsString();
-
-                                    sourceUniqueId = items.get(i).getAsJsonObject().get("origin").getAsJsonObject().get("streamId").getAsString();
-                                } catch (NullPointerException e1) {
-                                    endService(e1);
-                                    return;
-                                }
-
-                                Article article = new Article();
-                                article.setUniqueId(id);
-                                article.setTitle(title);
-                                article.setAuthor(author);
-                                article.setLinkUrl(link);
-                                article.setFullContent(summary);
-                                article.setDate(new Date(date));
-
-                                // always keep the most recent article date for later use
-                                latestArticleDate = Math.max(latestArticleDate, date);
-
-                                // we need the Palabre internal id for the source
-                                long sourceId = 0;
-                                for (Source source : sources) {
-                                    if (source.getUniqueId().equals(sourceUniqueId)) {
-                                        sourceId = source.getId();
+                                    if (found) {
+                                        continue;
                                     }
-                                }
 
+                                    String summary = null;
+                                    String title = null;
+                                    String author = null;
+                                    String link = null;
+                                    String sourceUniqueId = null;
+                                    try {
+                                        summary = items.get(i).getAsJsonObject().get("summary").getAsJsonObject().get("content").getAsString();
+                                        title = items.get(i).getAsJsonObject().get("title").getAsString();
+                                        author = items.get(i).getAsJsonObject().get("author").getAsString();
+                                        link = items.get(i).getAsJsonObject().get("canonical").getAsJsonArray().get(0).getAsJsonObject().get("href").getAsString();
 
-                                article.setSourceId(sourceId);
+                                        sourceUniqueId = items.get(i).getAsJsonObject().get("origin").getAsJsonObject().get("streamId").getAsString();
+                                    } catch (NullPointerException e1) {
+                                        endService(e1);
+                                        return;
+                                    }
 
-                                // find a picture within the article/summary using Jsoup.
-                                // Some API/Services provides the picture directly, but that's not the case here
-                                Document doc = Jsoup.parse(article.getFullContent());
-                                String image = null;
-                                for (Element el : doc.select("img")) {
-                                    //Log.d("TOR", "Image: " + el.attr("src"));
-                                    // filter a few pictures that has not relation with the article
-                                    if (!el.attr("src").contains("feeds.feedburner.com") && !el.attr("src").contains("feedsportal.com")) {
-                                        // use the first one
-                                        if (image == null) {
-                                            image = el.attr("src");
+                                    Article article = new Article();
+                                    article.setUniqueId(id);
+                                    article.setTitle(title);
+                                    article.setAuthor(author);
+                                    article.setLinkUrl(link);
+                                    article.setFullContent(summary);
+                                    article.setDate(new Date(date));
+
+                                    // always keep the most recent article date for later use
+                                    latestArticleDate = Math.max(latestArticleDate, date);
+
+                                    // we need the Palabre internal id for the source
+                                    long sourceId = 0;
+                                    for (Source source : sources) {
+                                        if (source.getUniqueId().equals(sourceUniqueId)) {
+                                            sourceId = source.getId();
                                         }
                                     }
+
+
+                                    article.setSourceId(sourceId);
+
+                                    // find a picture within the article/summary using Jsoup.
+                                    // Some API/Services provides the picture directly, but that's not the case here
+                                    Document doc = Jsoup.parse(article.getFullContent());
+                                    String image = null;
+                                    for (Element el : doc.select("img")) {
+                                        //Log.d("TOR", "Image: " + el.attr("src"));
+                                        // filter a few pictures that has not relation with the article
+                                        if (!el.attr("src").contains("feeds.feedburner.com") && !el.attr("src").contains("feedsportal.com")) {
+                                            // use the first one
+                                            if (image == null) {
+                                                image = el.attr("src");
+                                            }
+                                        }
+                                    }
+
+                                    article.setImage(image);
+
+                                    articles.add(article);
+
                                 }
-
-                                article.setImage(image);
-
-                                articles.add(article);
-
                             }
 
                             if (BuildConfig.DEBUG) Log.d(TAG, "TimeTracking: queries generated");
@@ -576,7 +579,7 @@ public class TheOldReaderExtension extends PalabreExtension {
                                 Article.multipleSave(TheOldReaderExtension.this, articles);
                             }
 
-                                publishUpdateStatus(new ExtensionUpdateStatus().progress(85));
+                            publishUpdateStatus(new ExtensionUpdateStatus().progress(85));
 
                             fetchReads(authKey);
                         } else {
@@ -714,7 +717,7 @@ public class TheOldReaderExtension extends PalabreExtension {
                         }
 
                         try {
-                            Log.w("TOR", "Sending mark as read before: " + result.getHeaders().code() +" => "+ result.getResult());
+                            Log.w("TOR", "Sending mark as read before: " + result.getHeaders().code() + " => " + result.getResult());
                         } catch (Exception e1) {
                         }
 
