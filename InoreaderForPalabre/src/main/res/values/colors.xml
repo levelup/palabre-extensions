@@ -5,4 +5,6 @@
     <color name="main_light">#4871a8</color>
     <color name="white">#ffffff</color>
     <color name="black_transp_1f">#1F000000</color>
+    <color name="cpb_grey">#ffdedede</color>
+    <color name="cpb_red">#ffff4444</color>
 </resources>

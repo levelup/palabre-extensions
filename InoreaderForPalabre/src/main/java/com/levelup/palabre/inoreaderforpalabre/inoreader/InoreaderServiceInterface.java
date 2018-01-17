@@ -8,75 +8,70 @@ import com.levelup.palabre.inoreaderforpalabre.inoreader.data.userinfo.UserInfo;
 
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.http.GET;
-import retrofit.http.POST;
-import retrofit.http.Query;
+import retrofit2.Call;
+import retrofit2.http.GET;
+import retrofit2.http.POST;
+import retrofit2.http.Query;
+
 
 public interface InoreaderServiceInterface {
 
-    @GET("/subscription/list")
-    void getSubscriptionList(Callback<SubscriptionList> callback);
+    @GET("subscription/list")
+    Call<SubscriptionList> getSubscriptionList();
 
-    @GET("/preference/stream/list")
-    void getStreamPreferenceList(Callback<String> callback);
+    @GET("preference/stream/list")
+    Call<String> getStreamPreferenceList();
 
-    @GET("/tag/list")
-    void getFolderList(Callback<FolderList> callback);
+    @GET("tag/list")
+    Call<FolderList> getFolderList();
 
-    @GET("/stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000")
-    void getStreamContent(@Query("ot") long limitDate, @Query("xt") String exclude, Callback<StreamContent> callback);
+    @GET("stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000")
+    Call<StreamContent> getStreamContent(@Query("ot") long limitDate, @Query("xt") String exclude);
 
-    @GET("/stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000")
-    StreamContent getStreamContent(@Query("c") String continuation);
+    @GET("stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000")
+    Call<StreamContent> getStreamContent(@Query("c") String continuation);
 
-    @GET("/stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000&it=user/-/state/com.google/read")
-    void getStreamContentRead(Callback<StreamContent> callback);
+    @GET("stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000&it=user/-/state/com.google/read")
+    Call<StreamContent> getStreamContentRead();
 
-    @GET("/stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000&it=user/-/state/com.google/starred")
-    void getStreamContentStarred(Callback<StreamContent> callback);
+    @GET("stream/contents/user%2F-%2Fstate%2Fcom.google%2Freading-list?n=1000&it=user/-/state/com.google/starred")
+    Call<StreamContent> getStreamContentStarred();
 
-    @GET("/user-info")
-    void getUserInfo(Callback<UserInfo> callback);
+    @GET("user-info")
+    Call<UserInfo> getUserInfo();
 
-    @POST("/edit-tag?a=user/-/state/com.google/read")
-    void markAsRead(@Query("i") List<String> parameters, Callback<String> callback);
+    @POST("edit-tag?a=user/-/state/com.google/read")
+    Call<String> markAsRead(@Query("i") List<String> parameters);
 
-    @POST("/mark-all-as-read")
-    void markAsReadBefore(@Query("ts") long timestamp, @Query("s") String stream, Callback<String> callback);
+    @POST("mark-all-as-read")
+    Call<String> markAsReadBefore(@Query("ts") long timestamp, @Query("s") String stream);
 
-    @POST("/edit-tag?r=user/-/state/com.google/read")
-    void markAsUnread(@Query("i") List<String> parameters, Callback<String> callback);
+    @POST("edit-tag?r=user/-/state/com.google/read")
+    Call<String> markAsUnread(@Query("i") List<String> parameters);
 
-    @POST("/edit-tag?a=user/-/state/com.google/starred")
-    void markAsSaved(@Query("i") List<String> parameters, Callback<String> callback);
+    @POST("edit-tag?a=user/-/state/com.google/starred")
+    Call<String> markAsSaved(@Query("i") List<String> parameters);
 
-    @POST("/edit-tag?r=user/-/state/com.google/starred")
-    void markAsUnsaved(@Query("i") List<String> parameters, Callback<String> callback);
+    @POST("edit-tag?r=user/-/state/com.google/starred")
+    Call<String> markAsUnsaved(@Query("i") List<String> parameters);
 
-    @POST("/subscription/edit?ac=edit")
-    void removeSourceFromCat(@Query("s") String source, @Query("r") String category, Callback<String> callback);
+    @POST("subscription/edit?ac=edit")
+    Call<String> removeSourceFromCat(@Query("s") String source, @Query("r") String category);
 
-    @POST("/subscription/edit?ac=edit")
-    void moveSource(@Query("s") String source, @Query("r") String removeCategory, @Query("a") String addCategory, Callback<String> callback);
+    @POST("subscription/edit?ac=edit")
+    Call<String> moveSource(@Query("s") String source, @Query("r") String removeCategory, @Query("a") String addCategory);
 
-    @POST("/subscription/edit?ac=unsubscribe")
-    void unsubscribeSource(@Query("s") String source, Callback<String> callback);
+    @POST("subscription/edit?ac=unsubscribe")
+    Call<String> unsubscribeSource(@Query("s") String source);
 
-    @POST("/disable-tag")
-    void deleteCategory(@Query("s") String source, Callback<String> callback);
+    @POST("disable-tag")
+    Call<String> deleteCategory(@Query("s") String source);
 
-    @POST("/subscription/quickadd")
-    void addSubscription(@Query("quickadd") String source, Callback<AddSubscriptionResponse> callback);
+    @POST("subscription/quickadd")
+    Call<AddSubscriptionResponse> addSubscription(@Query("quickadd") String source);
 //
 //    @GET("/?&method=flickr.people.getInfo&format=json&api_key=" + Config.CONSUMER_KEY + "&nojsoncallback=1")
-//    void getUser(@Query("user_id") String owner, Callback<UserResponse> callback);
+//    Call<> getUser(@Query("user_id") String owner, Callback<UserResponse> callback);
 //
 
-    public interface IRequestListener<T> {
-        void onFailure(RetrofitError retrofitError);
-
-        void onSuccess(T response);
-    }
 }

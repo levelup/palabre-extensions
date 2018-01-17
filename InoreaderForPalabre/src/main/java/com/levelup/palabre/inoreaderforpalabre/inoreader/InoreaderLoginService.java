@@ -2,22 +2,21 @@ package com.levelup.palabre.inoreaderforpalabre.inoreader;
 
 import android.content.Context;
 
-import com.levelup.palabre.inoreaderforpalabre.BuildConfig;
-import com.levelup.palabre.inoreaderforpalabre.retrofit.StringConverter;
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
+import retrofit2.Retrofit;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
-import retrofit.Callback;
-import retrofit.RestAdapter;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 public class InoreaderLoginService {
 
 
     private static final String TAG = InoreaderLoginService.class.getSimpleName();
-    public static final String API_ENDPOINT = "https://www.inoreader.com/accounts/ClientLogin";
+    public static final String API_ENDPOINT = "https://www.inoreader.com/accounts/";
     private static InoreaderLoginService INSTANCE;
     private final Context context;
-    private RestAdapter mRestAdapter;
+    private Retrofit mRestAdapter;
 
     private InoreaderLoginService(Context context) {
         this.context = context;
@@ -32,11 +31,24 @@ public class InoreaderLoginService {
     private InoreaderLoginServiceInterface getService() {
         if (mRestAdapter == null) {
 
-            RestAdapter.Builder builder = new RestAdapter.Builder()
-                    .setLogLevel(RestAdapter.LogLevel.FULL)
-                    .setEndpoint(API_ENDPOINT)
-                    .setConverter(new StringConverter())
-                    .setLogLevel(BuildConfig.DEBUG ? RestAdapter.LogLevel.FULL : RestAdapter.LogLevel.NONE);
+
+            HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+// set your desired log level
+            logging.setLevel(HttpLoggingInterceptor.Level.HEADERS);
+
+            OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+// add your other interceptors …
+
+// add logging as last interceptor
+            httpClient.addInterceptor(logging);  // <-- this is the important line!
+
+
+
+
+            Retrofit.Builder builder = new Retrofit.Builder()
+                    .baseUrl(API_ENDPOINT)
+                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .client(httpClient.build());
 
             mRestAdapter = builder.build();
 
@@ -48,20 +60,13 @@ public class InoreaderLoginService {
 
 
 
-    public void login(String username, String password, final InoreaderLoginServiceInterface.IRequestListener<String> listener) {
+    public Call<String> login(String username, String password) {
 
 
-        getService().login(username, password, new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
 
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure();
-            }
-        });
+
+
+        return getService().login(username, password);
     }
 
 

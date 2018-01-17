@@ -1,13 +1,14 @@
 package com.levelup.palabre.inoreaderforpalabre.inoreader;
 
-import retrofit.Callback;
-import retrofit.http.POST;
-import retrofit.http.Query;
+
+import retrofit2.Call;
+import retrofit2.http.POST;
+import retrofit2.http.Query;
 
 public interface InoreaderLoginServiceInterface {
 
-    @POST("/")
-    void login(@Query("Email") String username, @Query("Passwd") String password, Callback<String> callback);
+    @POST("ClientLogin")
+    Call<String> login(@Query("Email") String username, @Query("Passwd") String password);
 
     public interface IRequestListener<T> {
         void onFailure();

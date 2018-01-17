@@ -18,7 +18,6 @@ import com.levelup.palabre.api.datamapping.DataMappingOptions;
 import com.levelup.palabre.api.datamapping.Source;
 import com.levelup.palabre.inoreaderforpalabre.core.SharedPreferenceKeys;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderService;
-import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderServiceInterface;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.Subscription;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.SubscriptionList;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.folderlist.FolderList;
@@ -32,6 +31,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -44,9 +44,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * Created by nicolas on 01/06/15.
@@ -96,8 +96,8 @@ public class InoreaderExtension extends PalabreExtension {
             }
 
             @Override
-            public void onFailure(RetrofitError retrofitError) {
-                endUpdate(true, retrofitError);
+            public void onFailure(Throwable throwable) {
+                endUpdate(true, throwable);
             }
 
             @Override
@@ -139,7 +139,7 @@ public class InoreaderExtension extends PalabreExtension {
                         continuation = loadSetOfArticles(context, userId, savedSources, allArticles, continuation);
                         publishUpdateStatus(new ExtensionUpdateStatus().progress(progress));
                         progress += 5;
-                    } catch (RetrofitError e) {
+                    } catch (Exception e) {
                         endUpdate(true, e);
                     }
                 }
@@ -163,13 +163,19 @@ public class InoreaderExtension extends PalabreExtension {
      * @param continuation the continuation ID to use
      * @return a continuation ID
      */
-    public String loadSetOfArticles(Context context, String userId, List<Source> savedSources, List<Article> allArticles, String continuation) {
+    public String loadSetOfArticles(Context context, String userId, List<Source> savedSources, List<Article> allArticles, String continuation) throws IOException {
 
         //Load articles
-        StreamContent response = InoreaderService.getInstance(context).getStreamContent(continuation);
+        Call<StreamContent> call = InoreaderService.getInstance(context).getStreamContent(continuation);
+         Response<StreamContent> response = call.execute();
+        if (!response.isSuccessful()) {
+            throw new IOException(response.errorBody().toString());
+        }
+
+        StreamContent result = response.body();
 
         final List<Article> articles = new ArrayList<>();
-        for (Item item : response.getItems()) {
+        for (Item item : result.getItems()) {
 
             boolean needToUpdate = true;
             for (Article allArticle : allArticles) {
@@ -189,7 +195,7 @@ public class InoreaderExtension extends PalabreExtension {
             }
         }
         Article.multipleSave(context, articles);
-        return response.getContinuation();
+        return result.getContinuation();
     }
 
 
@@ -202,19 +208,20 @@ public class InoreaderExtension extends PalabreExtension {
     public void refreshStarredArticles(final String userId, final List<Source> savedSources) {
         if (BuildConfig.DEBUG) Log.d(TAG, "Refresh Starred articles");
         //get all the starred items
-        InoreaderService.getInstance(InoreaderExtension.this).getStreamContentStarred(new InoreaderServiceInterface.IRequestListener<StreamContent>() {
+        Call<StreamContent> request = InoreaderService.getInstance(InoreaderExtension.this).getStreamContentStarred();
+        request.enqueue(new Callback<StreamContent>() {
             @Override
-            public void onFailure(RetrofitError retrofitError) {
-                endUpdate(true, retrofitError);
+            public void onResponse(Call<StreamContent> call, Response<StreamContent> response) {
+                if (!response.isSuccessful()) {
+                    endUpdate(true, null);
+                    return;
+                }
 
-            }
-
-            @Override
-            public void onSuccess(StreamContent response) {
+                StreamContent result = response.body();
 
                 List<Article> articles = new ArrayList<Article>();
 
-                for (Item item : response.getItems()) {
+                for (Item item : result.getItems()) {
                     addArticleToList(userId, savedSources, articles, item);
                 }
 
@@ -225,6 +232,12 @@ public class InoreaderExtension extends PalabreExtension {
 
                 endUpdate(false, null);
             }
+
+            @Override
+            public void onFailure(Call<StreamContent> call, Throwable t) {
+                endUpdate(true, t);
+
+            }
         });
     }
 
@@ -232,21 +245,22 @@ public class InoreaderExtension extends PalabreExtension {
      * End the refresh process
      *
      * @param isFailure     is it the result of a failure?
-     * @param retrofitError the error sent
+     * @param throwable the error sent
      */
-    public void endUpdate(boolean isFailure, RetrofitError retrofitError) {
+    public void endUpdate(boolean isFailure, Throwable throwable) {
         updateRunning = false;
         //It's a filure
         if (isFailure) {
 
             //Let's see if it can be explained
             String errorString = getResources().getString(R.string.refresh_error, "");
-            if (retrofitError != null && retrofitError.getCause() instanceof UnknownHostException) {
+
+            if (throwable != null && throwable.getCause() instanceof UnknownHostException) {
                 //it looks like a connection issue
                 errorString = getResources().getString(R.string.refresh_error_connection);
 
-            } else if (retrofitError != null) {
-                errorString = getResources().getString(R.string.refresh_error, "\n" + retrofitError.getMessage());
+            } else if (throwable != null) {
+                errorString = getResources().getString(R.string.refresh_error, "\n" + throwable.getMessage());
             }
 
             //Send the fail result with the explanation that will be shown in Palabre
@@ -266,17 +280,20 @@ public class InoreaderExtension extends PalabreExtension {
      * @param listener a listener that sends the result ad progress back
      */
     public static void refreshCategoriesAndSources(final Context context, final OnCategoryAndSourceRefreshed listener) {
-        InoreaderService.getInstance(context).getStreamPreferenceList(new InoreaderServiceInterface.IRequestListener<String>() {
+        Call<String> call = InoreaderService.getInstance(context).getStreamPreferenceList();
+        call.enqueue(new Callback<String>() {
             @Override
-            public void onFailure(RetrofitError retrofitError) {
-                if (BuildConfig.DEBUG) Log.d(TAG, "Failure", retrofitError);
-                if (listener != null) {
-                    listener.onFailure(retrofitError);
+            public void onResponse(Call<String> call, Response<String> response) {
+                if (!response.isSuccessful()) {
+                    try {
+                        onFailure(call, new IOException(response.errorBody().string()));
+                    } catch (IOException e) {
+                        onFailure(call, new IOException());
+                    }
+                    return;
                 }
-            }
 
-            @Override
-            public void onSuccess(String response) {
+                String result = response.body();
                 if (BuildConfig.DEBUG) Log.d(TAG, "response");
 
                 if (listener != null) listener.onprogressChanged(5);
@@ -287,7 +304,7 @@ public class InoreaderExtension extends PalabreExtension {
                 gsonBuilder.registerTypeAdapter(mapStringObjectType, new Streamprefs());
                 Gson gson = gsonBuilder.create();
 
-                Map<String, Object> map = gson.fromJson(response, mapStringObjectType);
+                Map<String, Object> map = gson.fromJson(result, mapStringObjectType);
                 System.out.println(map);
 
                 final Map<String, List<String>> sortOrders = new HashMap<>();
@@ -321,21 +338,27 @@ public class InoreaderExtension extends PalabreExtension {
 
 
                 //get folders
-                InoreaderService.getInstance(context).getFolderList(new InoreaderServiceInterface.IRequestListener<FolderList>() {
+                Call<FolderList> folderCall = InoreaderService.getInstance(context).getFolderList();
+                folderCall.enqueue(new Callback<FolderList>() {
                     @Override
-                    public void onFailure(RetrofitError retrofitError) {
-                        if (BuildConfig.DEBUG) Log.d(TAG, "Error");
-                        if (listener != null) {
-                            listener.onFailure(retrofitError);
-                        }
-                    }
+                    public void onResponse(Call<FolderList> call, Response<FolderList> response) {
 
-                    @Override
-                    public void onSuccess(FolderList response) {
+                        if (!response.isSuccessful()) {
+                            try {
+                                onFailure(call, new IOException(response.errorBody().string()));
+                            } catch (IOException e) {
+                                onFailure(call, new IOException());
+                            }
+                            return;
+                        }
+
+                        FolderList result = response.body();
+
+
                         if (listener != null) listener.onprogressChanged(10);
 
                         List<Tag> orderedTags = new ArrayList<>();
-                        for (Tag tag : response.getTags()) {
+                        for (Tag tag : result.getTags()) {
                             if (BuildConfig.DEBUG) Log.d(TAG, "Folder: " + tag.getId());
 
                             if (tag.getId().contains("/label/")) {
@@ -400,17 +423,21 @@ public class InoreaderExtension extends PalabreExtension {
 
 
                         //Loading sources
-                        InoreaderService.getInstance(context).getSubscriptionList(new InoreaderServiceInterface.IRequestListener<SubscriptionList>() {
+                        Call<SubscriptionList> subCall = InoreaderService.getInstance(context).getSubscriptionList();
+                        subCall.enqueue(new Callback<SubscriptionList>() {
                             @Override
-                            public void onFailure(RetrofitError retrofitError) {
-                                if (BuildConfig.DEBUG) Log.d(TAG, "failure");
-                                if (listener != null) {
-                                    listener.onFailure(retrofitError);
+                            public void onResponse(Call<SubscriptionList> call, Response<SubscriptionList> response) {
+                                if (!response.isSuccessful()) {
+                                    try {
+                                        onFailure(call, new IOException(response.errorBody().string()));
+                                    } catch (IOException e) {
+                                        onFailure(call, new IOException());
+                                    }
+                                    return;
                                 }
-                            }
 
-                            @Override
-                            public void onSuccess(SubscriptionList response) {
+                                SubscriptionList result = response.body();
+
 
                                 if (listener != null) listener.onprogressChanged(20);
 
@@ -418,7 +445,7 @@ public class InoreaderExtension extends PalabreExtension {
 
                                 List<Category> allCategories = Category.getAll(context);
 
-                                for (Subscription subscription : response.getSubscriptions()) {
+                                for (Subscription subscription : result.getSubscriptions()) {
 
                                     Set<Category> categoryList = new HashSet<>();
                                     for (com.levelup.palabre.inoreaderforpalabre.inoreader.data.Category category : subscription.getCategories()) {
@@ -450,7 +477,7 @@ public class InoreaderExtension extends PalabreExtension {
                                 List<Source> allSources = Source.getAll(context);
                                 for (Source source : allSources) {
                                     boolean found = false;
-                                    for (Subscription subscription : response.getSubscriptions()) {
+                                    for (Subscription subscription : result.getSubscriptions()) {
                                         if (source.getUniqueId().equals(subscription.getId())) {
                                             found = true;
                                             break;
@@ -471,17 +498,38 @@ public class InoreaderExtension extends PalabreExtension {
                                 if (listener != null) {
                                     listener.onFinished();
                                 }
+                            }
 
-
+                            @Override
+                            public void onFailure(Call<SubscriptionList> call, Throwable t) {
+                                if (BuildConfig.DEBUG) Log.d(TAG, "failure");
+                                if (listener != null) {
+                                    listener.onFailure(t);
+                                }
                             }
                         });
 
+                    }
 
+                    @Override
+                    public void onFailure(Call<FolderList> call, Throwable t) {
+                        if (BuildConfig.DEBUG) Log.d(TAG, "Error");
+                        if (listener != null) {
+                            listener.onFailure(t);
+                        }
                     }
                 });
+            }
 
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                if (BuildConfig.DEBUG) Log.d(TAG, "Failure", t);
+                if (listener != null) {
+                    listener.onFailure(t);
+                }
             }
         });
+
 
     }
 
@@ -514,28 +562,37 @@ public class InoreaderExtension extends PalabreExtension {
     protected void onReadArticles(final List<String> articles, final boolean value) {
         if (BuildConfig.DEBUG) Log.d(TAG, "Reading articles: " + articles.size() + " => " + value);
         if (value) {
-            InoreaderService.getInstance(InoreaderExtension.this).markAsRead(articles, new Callback<String>() {
+            Call<String> call = InoreaderService.getInstance(InoreaderExtension.this).markAsRead(articles);
+            call.enqueue(new Callback<String>() {
                 @Override
-                public void success(String s, Response response) {
-
+                public void onResponse(Call<String> call, Response<String> response) {
+                    if (!response.isSuccessful()) {
+                        onReadArticlesFailed(articles, value);
+                    }
                 }
 
                 @Override
-                public void failure(RetrofitError error) {
+                public void onFailure(Call<String> call, Throwable t) {
                     onReadArticlesFailed(articles, value);
                 }
             });
+
         } else {
 
-            InoreaderService.getInstance(InoreaderExtension.this).markAsUnread(articles, new Callback<String>() {
+            Call<String> call = InoreaderService.getInstance(InoreaderExtension.this).markAsUnread(articles);
+            call.enqueue(new Callback<String>() {
                 @Override
-                public void success(String s, Response response) {
+                public void onResponse(Call<String> call, Response<String> response) {
+                    if (!response.isSuccessful()) {
+                        onReadArticlesFailed(articles, value);
+                    }
 
                 }
 
                 @Override
-                public void failure(RetrofitError error) {
+                public void onFailure(Call<String> call, Throwable t) {
                     onReadArticlesFailed(articles, value);
+
                 }
             });
         }
@@ -558,18 +615,23 @@ public class InoreaderExtension extends PalabreExtension {
         }
 //
         final String finalUniqueId = uniqueId;
-        InoreaderService.getInstance(InoreaderExtension.this).markAsReadBefore(timestamp * 1000, uniqueId, new Callback<String>() {
+        Call<String> call = InoreaderService.getInstance(InoreaderExtension.this).markAsReadBefore(timestamp * 1000, uniqueId);
+        call.enqueue(new Callback<String>() {
             @Override
-            public void success(String s, Response response) {
-
+            public void onResponse(Call<String> call, Response<String> response) {
+                if (!response.isSuccessful()) {
+                    onReadArticlesBeforeFailed(type, finalUniqueId, timestamp);
+                }
             }
 
             @Override
-            public void failure(RetrofitError error) {
+            public void onFailure(Call<String> call, Throwable t) {
                 onReadArticlesBeforeFailed(type, finalUniqueId, timestamp);
-
             }
         });
+
+
+
 
 
 
@@ -637,7 +699,7 @@ public class InoreaderExtension extends PalabreExtension {
     public interface OnCategoryAndSourceRefreshed {
         void onFinished();
 
-        void onFailure(RetrofitError retrofitError);
+        void onFailure(Throwable throwable);
 
         void onprogressChanged(int progress);
     }

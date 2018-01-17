@@ -15,12 +15,15 @@ import com.levelup.palabre.inoreaderforpalabre.BuildConfig;
 import com.levelup.palabre.inoreaderforpalabre.InoreaderExtension;
 import com.levelup.palabre.inoreaderforpalabre.R;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderService;
-import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderServiceInterface;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import retrofit.RetrofitError;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 
 /**
  * Created by nicolas on 11/06/15.
@@ -96,16 +99,23 @@ public class CategorySourceItemTouchCallback extends ItemTouchHelper.SimpleCallb
                     actionHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            InoreaderService.getInstance(context).moveSource(initialSource, initialCategory, newCategory, new InoreaderServiceInterface.IRequestListener<String>() {
+                            Call<String> call = InoreaderService.getInstance(context).moveSource(initialSource, initialCategory, newCategory);
+                            call.enqueue(new Callback<String>() {
                                 @Override
-                                public void onFailure(RetrofitError retrofitError) {
-                                    Snackbar.make(recyclerView, R.string.unable_to_perform, Snackbar.LENGTH_LONG).show();
-                                    undoAction();
+                                public void onResponse(Call<String> call, Response<String> response) {
+                                    if (!response.isSuccessful()) {
+                                        try {
+                                            onFailure(call, new IOException(response.errorBody().string()));
+                                        } catch (IOException e) {
+                                            onFailure(call, new IOException());
+                                        }
+                                    }
                                 }
 
                                 @Override
-                                public void onSuccess(String response) {
-
+                                public void onFailure(Call<String> call, Throwable t) {
+                                    Snackbar.make(recyclerView, R.string.unable_to_perform, Snackbar.LENGTH_LONG).show();
+                                    undoAction();
                                 }
                             });
                         }
@@ -185,16 +195,28 @@ public class CategorySourceItemTouchCallback extends ItemTouchHelper.SimpleCallb
     private void performDismissAction() {
         if (lastItemIsCategory) {
             final Category category = Category.getByUniqueId(context, lastItemDelete);
-            InoreaderService.getInstance(context).deleteCategory(lastItemDelete, new InoreaderServiceInterface.IRequestListener<String>() {
+            Call<String> call = InoreaderService.getInstance(context).deleteCategory(lastItemDelete);
+            call.enqueue(new Callback<String>() {
                 @Override
-                public void onFailure(RetrofitError retrofitError) {
-                    Snackbar.make(recyclerView, R.string.unable_to_perform, Snackbar.LENGTH_LONG).show();
-                    undoAction();
+                public void onResponse(Call<String> call, Response<String> response) {
+                    if (!response.isSuccessful()) {
+                        try {
+                            onFailure(call, new IOException(response.errorBody().string()));
+                        } catch (IOException e) {
+                            onFailure(call, new IOException());
+                        }
+                    } else {
+
+                        category.delete(context);
+                    }
+
+
                 }
 
                 @Override
-                public void onSuccess(String response) {
-                    category.delete(context);
+                public void onFailure(Call<String> call, Throwable t) {
+                    Snackbar.make(recyclerView, R.string.unable_to_perform, Snackbar.LENGTH_LONG).show();
+                    undoAction();
                 }
             });
 
@@ -206,16 +228,26 @@ public class CategorySourceItemTouchCallback extends ItemTouchHelper.SimpleCallb
             if (source.getCategories() != null && source.getCategories().size() == 1) {
                 // removed from last cat
                 if (BuildConfig.DEBUG) Log.d(TAG, "Last one: unsubscribing");
-                InoreaderService.getInstance(context).unsubscribeSource(lastItemDelete, new InoreaderServiceInterface.IRequestListener<String>() {
+                Call<String> call = InoreaderService.getInstance(context).unsubscribeSource(lastItemDelete);
+                call.enqueue(new Callback<String>() {
                     @Override
-                    public void onFailure(RetrofitError retrofitError) {
-                        Snackbar.make(recyclerView, R.string.unable_to_perform, Snackbar.LENGTH_LONG).show();
-                        undoAction();
+                    public void onResponse(Call<String> call, Response<String> response) {
+                        if (!response.isSuccessful()) {
+                            try {
+                                onFailure(call, new IOException(response.errorBody().string()));
+                            } catch (IOException e) {
+                                onFailure(call, new IOException());
+                            }
+                        } else {
+                            source.delete(context);
+                        }
+
                     }
 
                     @Override
-                    public void onSuccess(String response) {
-                        source.delete(context);
+                    public void onFailure(Call<String> call, Throwable t) {
+                        Snackbar.make(recyclerView, R.string.unable_to_perform, Snackbar.LENGTH_LONG).show();
+                        undoAction();
                     }
                 });
 
@@ -225,28 +257,37 @@ public class CategorySourceItemTouchCallback extends ItemTouchHelper.SimpleCallb
 
                 if (BuildConfig.DEBUG) Log.d(TAG, "Not last one: removing from cat");
 
-                InoreaderService.getInstance(context).removeSourceFromCat(lastItemDelete, lastCategoryId, new InoreaderServiceInterface.IRequestListener<String>() {
+                Call<String> call = InoreaderService.getInstance(context).removeSourceFromCat(lastItemDelete, lastCategoryId);
+                call.enqueue(new Callback<String>() {
                     @Override
-                    public void onFailure(RetrofitError retrofitError) {
+                    public void onResponse(Call<String> call, Response<String> response) {
+                        if (!response.isSuccessful()) {
+                            try {
+                                onFailure(call, new IOException(response.errorBody().string()));
+                            } catch (IOException e) {
+                                onFailure(call, new IOException());
+                            }
+                        } else {
+                            Set<Category> newCategories = new HashSet<Category>();
+                            for (Category category : source.getCategories()) {
+                                if (!category.getUniqueId().equals(lastCategoryId)) {
+                                    newCategories.add(category);
+                                }
+
+                            }
+
+                            source.setCategories(newCategories);
+                            source.save(context);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<String> call, Throwable t) {
                         Snackbar.make(recyclerView, R.string.unable_to_perform, Snackbar.LENGTH_LONG).show();
                         undoAction();
                     }
-
-                    @Override
-                    public void onSuccess(String response) {
-
-                        Set<Category> newCategories = new HashSet<Category>();
-                        for (Category category : source.getCategories()) {
-                            if (!category.getUniqueId().equals(lastCategoryId)) {
-                                newCategories.add(category);
-                            }
-
-                        }
-
-                        source.setCategories(newCategories);
-                        source.save(context);
-                    }
                 });
+                
             }
 
 

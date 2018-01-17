@@ -8,22 +8,28 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatButton;
+import android.support.v7.widget.AppCompatImageButton;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.text.Editable;
 import android.text.Html;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.dd.CircularProgressButton;
 import com.levelup.palabre.api.datamapping.Category;
 import com.levelup.palabre.api.datamapping.Source;
 import com.levelup.palabre.api.utils.PalabreUtils;
@@ -32,9 +38,7 @@ import com.levelup.palabre.inoreaderforpalabre.InoreaderExtension;
 import com.levelup.palabre.inoreaderforpalabre.R;
 import com.levelup.palabre.inoreaderforpalabre.core.SharedPreferenceKeys;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderLoginService;
-import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderLoginServiceInterface;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderService;
-import com.levelup.palabre.inoreaderforpalabre.inoreader.InoreaderServiceInterface;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.addsubscription.AddSubscriptionResponse;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.userinfo.UserInfo;
 import com.levelup.palabre.inoreaderforpalabre.ui.adapter.CategorySourceAdapter;
@@ -46,7 +50,9 @@ import java.util.regex.Pattern;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
-import retrofit.RetrofitError;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
     private String TAG = MainActivity.class.getSimpleName();
@@ -56,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     @InjectView(R.id.password)
     TextInputLayout password;
     @InjectView(R.id.login)
-    CircularProgressButton loginButton;
+    AppCompatButton loginButton;
     @InjectView(R.id.recycler_view)
     RecyclerView catSourceList;
     @InjectView(R.id.login_container)
@@ -69,6 +75,10 @@ public class MainActivity extends AppCompatActivity {
     EditText addFeedText;
     @InjectView(R.id.add_feed_progress)
     View addFeedprogress;
+    @InjectView(R.id.progress)
+    ProgressBar progress;
+    @InjectView(R.id.failure)
+    AppCompatImageButton failureBtn;
 
     private CategorySourceAdapter adapter;
     private MenuItem logoutMenu;
@@ -96,6 +106,37 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+        final TextWatcher watcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                startLogin();
+            }
+        };
+        username.getEditText().addTextChangedListener(watcher);
+        password.getEditText().addTextChangedListener(watcher);
+        password.getEditText().setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    login();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+
         TextView explanation = (TextView) findViewById(R.id.auth_explanation);
         explanation.setText(Html.fromHtml(getString(R.string.auth_explanation)));
         explanation.setMovementMethod(LinkMovementMethod.getInstance());
@@ -104,102 +145,7 @@ public class MainActivity extends AppCompatActivity {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final String usernameS = username.getEditText().getText().toString();
-                final String passwordS = password.getEditText().getText().toString();
-
-                boolean error = false;
-                if (TextUtils.isEmpty(usernameS)) {
-                    username.setError(getString(R.string.error_empty));
-                    error = true;
-                } else if (!isValidEmail(usernameS)) {
-                    username.setError(getString(R.string.error_email));
-                    error = true;
-
-                }
-                if (TextUtils.isEmpty(passwordS)) {
-                    password.setError(getString(R.string.error_empty));
-                    error = true;
-                }
-
-
-                if (error) {
-                    return;
-                }
-
-
-                loginButton.setIndeterminateProgressMode(true);
-                loginButton.setProgress(1);
-                hideKeyboard(username.getEditText());
-
-
-                InoreaderLoginService.getInstance(MainActivity.this).login(usernameS, passwordS, new InoreaderLoginServiceInterface.IRequestListener<String>() {
-                    @Override
-                    public void onFailure() {
-                        Snackbar
-                                .make(loginButton, R.string.login_error, Snackbar.LENGTH_LONG)
-//                                .setAction(R.string.snackbar_action, myOnClickListener)
-                                .show(); // Don’t forget to show!
-                        loginButton.setProgress(-1);
-                    }
-
-                    @Override
-                    public void onSuccess(String response) {
-                        if (BuildConfig.DEBUG) Log.d(TAG, "Result: " + response);
-                        String lines[] = response.split("\\r?\\n");
-                        for (String line : lines) {
-
-                            if (BuildConfig.DEBUG) Log.d(TAG, "Result line: " + line);
-                            if (line.startsWith("Auth")) {
-                                String authSplit[] = line.split("=");
-                                if (BuildConfig.DEBUG) Log.d(TAG, "token: " + authSplit[1]);
-                                InoreaderService.getInstance(MainActivity.this).resetAdapters();
-                                PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit().putString(SharedPreferenceKeys.TOKEN, authSplit[1]).apply();
-                                InoreaderService.getInstance(MainActivity.this).getUserInformation(new InoreaderServiceInterface.IRequestListener<UserInfo>() {
-                                    @Override
-                                    public void onFailure(RetrofitError retrofitError) {
-                                        loginButton.setProgress(0);
-                                    }
-
-                                    @Override
-                                    public void onSuccess(UserInfo response) {
-                                        PreferenceManager.getDefaultSharedPreferences(MainActivity.this)
-                                                .edit()
-                                                .putString(SharedPreferenceKeys.USER_ID, response.getUserId())
-                                                .putString(SharedPreferenceKeys.USER_NAME, response.getUserName())
-                                                .apply();
-
-                                        InoreaderExtension.refreshCategoriesAndSources(MainActivity.this, new InoreaderExtension.OnCategoryAndSourceRefreshed() {
-                                            @Override
-                                            public void onFinished() {
-                                                initList();
-                                                loginButton.setProgress(0);
-                                                try {
-                                                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
-                                                    startActivity(intent);
-                                                    MainActivity.this.finish();
-                                                } catch (Exception e) {
-                                                    // Palabre is not installed
-                                                    Snackbar.make(loginButton, R.string.intent_error, Snackbar.LENGTH_LONG).show();
-                                                }
-                                            }
-
-                                            @Override
-                                            public void onFailure(RetrofitError retrofitError) {
-                                                loginButton.setProgress(-1);
-                                            }
-
-                                            @Override
-                                            public void onprogressChanged(int progress) {
-
-                                            }
-                                        });
-
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
+                login();
             }
         });
 
@@ -209,6 +155,144 @@ public class MainActivity extends AppCompatActivity {
         manageIntent(getIntent());
 
 
+    }
+
+    private void login() {
+        final String usernameS = username.getEditText().getText().toString();
+        final String passwordS = password.getEditText().getText().toString();
+
+        boolean error = false;
+        if (TextUtils.isEmpty(usernameS)) {
+            username.setError(getString(R.string.error_empty));
+            error = true;
+        } else if (!isValidEmail(usernameS)) {
+            username.setError(getString(R.string.error_email));
+            error = true;
+
+        }
+        if (TextUtils.isEmpty(passwordS)) {
+            password.setError(getString(R.string.error_empty));
+            error = true;
+        }
+
+
+        if (error) {
+            return;
+        }
+
+
+        startProgress();
+        hideKeyboard(username.getEditText());
+
+
+        final Call<String> request = InoreaderLoginService.getInstance(MainActivity.this).login(usernameS, passwordS);
+        request.enqueue(new Callback<String>() {
+            @Override
+            public void onResponse(Call<String> call, Response<String> response) {
+                if (!response.isSuccessful()) {
+                    Snackbar
+                            .make(loginButton, R.string.login_error, Snackbar.LENGTH_LONG)
+//                                .setAction(R.string.snackbar_action, myOnClickListener)
+                            .show(); // Don’t forget to show!
+                    startFailure();
+                    return;
+                }
+
+                String result = response.body();
+
+                if (BuildConfig.DEBUG) Log.d(TAG, "Result: " + result);
+                String lines[] = result.split("\\r?\\n");
+                for (String line : lines) {
+
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Result line: " + line);
+                    if (line.startsWith("Auth")) {
+                        String authSplit[] = line.split("=");
+                        if (BuildConfig.DEBUG) Log.d(TAG, "token: " + authSplit[1]);
+                        InoreaderService.getInstance(MainActivity.this).resetAdapters();
+                        PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit().putString(SharedPreferenceKeys.TOKEN, authSplit[1]).apply();
+
+                        Call<UserInfo> userInfoRequest = InoreaderService.getInstance(MainActivity.this).getUserInformation();
+                        userInfoRequest.enqueue(new Callback<UserInfo>() {
+                            @Override
+                            public void onResponse(Call<UserInfo> call, Response<UserInfo> response) {
+                                if (!response.isSuccessful()) {
+                                    startLogin();
+                                    return;
+                                }
+                                UserInfo result = response.body();
+                                PreferenceManager.getDefaultSharedPreferences(MainActivity.this)
+                                        .edit()
+                                        .putString(SharedPreferenceKeys.USER_ID, result.getUserId())
+                                        .putString(SharedPreferenceKeys.USER_NAME, result.getUserName())
+                                        .apply();
+
+                                InoreaderExtension.refreshCategoriesAndSources(MainActivity.this, new InoreaderExtension.OnCategoryAndSourceRefreshed() {
+                                    @Override
+                                    public void onFinished() {
+                                        initList();
+                                        startLogin();
+                                        try {
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("palabre://extauth"));
+                                            startActivity(intent);
+                                            MainActivity.this.finish();
+                                        } catch (Exception e) {
+                                            // Palabre is not installed
+                                            Snackbar.make(loginButton, R.string.intent_error, Snackbar.LENGTH_LONG).show();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Throwable throwable) {
+                                        startFailure();
+                                    }
+
+                                    @Override
+                                    public void onprogressChanged(int progress) {
+
+                                    }
+                                });
+                            }
+
+                            @Override
+                            public void onFailure(Call<UserInfo> call, Throwable t) {
+                                startLogin();
+
+                            }
+                        });
+
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<String> call, Throwable t) {
+                Snackbar
+                        .make(loginButton, R.string.login_error, Snackbar.LENGTH_LONG)
+//                                .setAction(R.string.snackbar_action, myOnClickListener)
+                        .show(); // Don’t forget to show!
+                startFailure();
+            }
+        });
+
+
+
+    }
+
+    private void startLogin() {
+        loginButton.setVisibility(View.VISIBLE);
+        progress.setVisibility(View.GONE);
+        failureBtn.setVisibility(View.GONE);
+    }
+
+    private void startFailure() {
+        loginButton.setVisibility(View.GONE);
+        progress.setVisibility(View.GONE);
+        failureBtn.setVisibility(View.VISIBLE);    }
+
+    private void startProgress() {
+        loginButton.setVisibility(View.GONE);
+        progress.setVisibility(View.VISIBLE);
+        failureBtn.setVisibility(View.GONE);
     }
 
     @Override
@@ -251,48 +335,54 @@ public class MainActivity extends AppCompatActivity {
 
         switchSearchModeProgress();
         hideKeyboard(addFeedText);
-        InoreaderService.getInstance(this).addSubscription(addFeedText.getText().toString(), new InoreaderServiceInterface.IRequestListener<AddSubscriptionResponse>() {
+        Call<AddSubscriptionResponse> request = InoreaderService.getInstance(this).addSubscription(addFeedText.getText().toString());
+        request.enqueue(new Callback<AddSubscriptionResponse>() {
             @Override
-            public void onFailure(RetrofitError retrofitError) {
+            public void onResponse(Call<AddSubscriptionResponse> call, Response<AddSubscriptionResponse> response) {
+                if (!response.isSuccessful()) {
+                    switchSearchModeProgress();
+                Snackbar.make(loginButton, R.string.add_error, Snackbar.LENGTH_LONG).show();
+                } else {
+                    AddSubscriptionResponse result = response.body();
+                    if (result.getNumResults() > 0) {
+
+                        InoreaderExtension.refreshCategoriesAndSources(MainActivity.this, new InoreaderExtension.OnCategoryAndSourceRefreshed() {
+                            @Override
+                            public void onFinished() {
+                                adapter.reload();
+                                switchSearchMode();
+                                switchSearchModeProgress();
+                                addFeedText.setText("");
+                                catSourceList.smoothScrollToPosition(adapter.getItemCount());
+                            }
+
+                            @Override
+                            public void onFailure(Throwable throwable) {
+                                switchSearchModeProgress();
+                                Snackbar.make(loginButton, R.string.add_error, Snackbar.LENGTH_LONG).show();
+                            }
+
+                            @Override
+                            public void onprogressChanged(int progress) {
+
+                            }
+                        });
+
+
+                    } else {
+                        switchSearchModeProgress();
+                        Snackbar.make(loginButton, R.string.add_error, Snackbar.LENGTH_LONG).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AddSubscriptionResponse> call, Throwable t) {
                 switchSearchModeProgress();
                 Snackbar.make(loginButton, R.string.add_error, Snackbar.LENGTH_LONG).show();
             }
-
-            @Override
-            public void onSuccess(final AddSubscriptionResponse response) {
-
-                if (response.getNumResults() > 0) {
-
-                    InoreaderExtension.refreshCategoriesAndSources(MainActivity.this, new InoreaderExtension.OnCategoryAndSourceRefreshed() {
-                        @Override
-                        public void onFinished() {
-                            adapter.reload();
-                            switchSearchMode();
-                            switchSearchModeProgress();
-                            addFeedText.setText("");
-                            catSourceList.smoothScrollToPosition(adapter.getItemCount());
-                        }
-
-                        @Override
-                        public void onFailure(RetrofitError retrofitError) {
-                            switchSearchModeProgress();
-                            Snackbar.make(loginButton, R.string.add_error, Snackbar.LENGTH_LONG).show();
-                        }
-
-                        @Override
-                        public void onprogressChanged(int progress) {
-
-                        }
-                    });
-
-
-                } else {
-                    switchSearchModeProgress();
-                    Snackbar.make(loginButton, R.string.add_error, Snackbar.LENGTH_LONG).show();
-                }
-
-            }
         });
+
     }
 
 

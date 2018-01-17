@@ -13,26 +13,30 @@ import com.levelup.palabre.inoreaderforpalabre.inoreader.data.addsubscription.Ad
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.folderlist.FolderList;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.streamcontent.StreamContent;
 import com.levelup.palabre.inoreaderforpalabre.inoreader.data.userinfo.UserInfo;
-import com.levelup.palabre.inoreaderforpalabre.retrofit.SigningOkClient;
-import com.levelup.palabre.inoreaderforpalabre.retrofit.StringConverter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit.Callback;
-import retrofit.RestAdapter;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class InoreaderService {
 
 
     private static final String TAG = InoreaderService.class.getSimpleName();
-    public static final String API_ENDPOINT = "https://www.inoreader.com/reader/api/0";
+    public static final String API_ENDPOINT = "https://www.inoreader.com/reader/api/0/";
     private static InoreaderService INSTANCE;
     private final Context context;
-    private RestAdapter mRestAdapter;
-    private RestAdapter mRestAdapterStringConverter;
+    private Retrofit mRestAdapter;
+    private Retrofit mRestAdapterStringConverter;
 
     private InoreaderService(Context context) {
         this.context = context;
@@ -43,21 +47,21 @@ public class InoreaderService {
         return INSTANCE;
     }
 
+
     private InoreaderServiceInterface getService() {
         if (mRestAdapter == null) {
 
-            RestAdapter.Builder builder = new RestAdapter.Builder()
-                    .setLogLevel(RestAdapter.LogLevel.FULL)
-                    .setEndpoint(API_ENDPOINT)
-                    .setLogLevel(BuildConfig.DEBUG ? RestAdapter.LogLevel.FULL : RestAdapter.LogLevel.NONE);
+            OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+            buildOkhttpClient(httpClient);
 
-            final SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-            String token = settings.getString(SharedPreferenceKeys.TOKEN, "");
-//            String secret = settings.getString(SharedPreferenceKeys.LOGIN_SECRET, "");
-            if (!TextUtils.isEmpty(token)) {
-                builder.setClient(new SigningOkClient(token));
-                if (BuildConfig.DEBUG) Log.d(TAG, "Using signed request");
-            }
+
+            Retrofit.Builder builder = new Retrofit.Builder()
+                    .baseUrl(API_ENDPOINT)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .client(httpClient.build());
+
+
 
 
             mRestAdapter = builder.build();
@@ -66,23 +70,19 @@ public class InoreaderService {
 
         return mRestAdapter.create(InoreaderServiceInterface.class);
     }
-
-    private InoreaderServiceInterface getServiceStringConverter() {
+    private InoreaderServiceInterface getServiceString() {
         if (mRestAdapterStringConverter == null) {
 
-            RestAdapter.Builder builder = new RestAdapter.Builder()
-                    .setLogLevel(RestAdapter.LogLevel.FULL)
-                    .setEndpoint(API_ENDPOINT)
-                    .setConverter(new StringConverter())
-                    .setLogLevel(BuildConfig.DEBUG ? RestAdapter.LogLevel.FULL : RestAdapter.LogLevel.NONE);
+            OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+            buildOkhttpClient(httpClient);
 
-            final SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
-            String token = settings.getString(SharedPreferenceKeys.TOKEN, "");
-//            String secret = settings.getString(SharedPreferenceKeys.LOGIN_SECRET, "");
-            if (!TextUtils.isEmpty(token)) {
-                builder.setClient(new SigningOkClient(token));
-                if (BuildConfig.DEBUG) Log.d(TAG, "Using signed request");
-            }
+
+            Retrofit.Builder builder = new Retrofit.Builder()
+                    .baseUrl(API_ENDPOINT)
+                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .client(httpClient.build());
+
+
 
 
             mRestAdapterStringConverter = builder.build();
@@ -92,93 +92,73 @@ public class InoreaderService {
         return mRestAdapterStringConverter.create(InoreaderServiceInterface.class);
     }
 
+    private void buildOkhttpClient(OkHttpClient.Builder httpClient) {
+        //Logging
+        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-    public void getFolderList(final InoreaderServiceInterface.IRequestListener<FolderList> listener) {
+        httpClient.addInterceptor(logging);
 
+        //Auth
+        final SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(context);
+        final String token = settings.getString(SharedPreferenceKeys.TOKEN, "");
+        if (!TextUtils.isEmpty(token)) {
 
-        getService().getFolderList(new Callback<FolderList>() {
-            @Override
-            public void success(FolderList photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
-    }
-
-    public void getSubscriptionList(final InoreaderServiceInterface.IRequestListener<SubscriptionList> listener) {
+            httpClient.networkInterceptors().add(new Interceptor() {
+                @Override
+                public Response intercept(Chain chain) throws IOException {
+                    Request.Builder requestBuilder = chain.request().newBuilder();
 
 
-        getService().getSubscriptionList(new Callback<SubscriptionList>() {
-            @Override
-            public void success(SubscriptionList photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
 
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
-    }
+                    requestBuilder.addHeader("Authorization", "GoogleLogin auth=" + token);
+                    requestBuilder.addHeader("AppId", InoreaderKeys.APP_ID);
+                    requestBuilder.addHeader("AppKey", InoreaderKeys.APP_KEY);
+                    return chain.proceed(requestBuilder.build());
+                }
+            });
 
-    public void getStreamPreferenceList(final InoreaderServiceInterface.IRequestListener<String> listener) {
-
-
-        getServiceStringConverter().getStreamPreferenceList(new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+            if (BuildConfig.DEBUG) Log.d(TAG, "Using signed request");
+        }
     }
 
 
-    public StreamContent getStreamContent(String continuation) {
+    public Call<FolderList> getFolderList() {
+
+
+        return getService().getFolderList();
+    }
+
+    public Call<SubscriptionList> getSubscriptionList() {
+
+
+        return getService().getSubscriptionList();
+    }
+
+    public Call<String> getStreamPreferenceList() {
+
+
+        return getServiceString().getStreamPreferenceList();
+    }
+
+
+    public Call<StreamContent> getStreamContent(String continuation) {
 
 
         return getService().getStreamContent(continuation);
     }
 
-    public void getStreamContentRead(final InoreaderServiceInterface.IRequestListener<StreamContent> listener) {
+    public Call<StreamContent> getStreamContentRead() {
 
         String userid = PreferenceManager.getDefaultSharedPreferences(context).getString(SharedPreferenceKeys.USER_ID, "");
 
-        getService().getStreamContentRead(new Callback<StreamContent>() {
-            @Override
-            public void success(StreamContent photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+        return getService().getStreamContentRead();
     }
 
-    public void getStreamContentStarred(final InoreaderServiceInterface.IRequestListener<StreamContent> listener) {
+    public Call<StreamContent> getStreamContentStarred() {
 
 
-        getService().getStreamContentStarred(new Callback<StreamContent>() {
-            @Override
-            public void success(StreamContent photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+        return getService().getStreamContentStarred();
     }
 
 
@@ -188,91 +168,41 @@ public class InoreaderService {
         mRestAdapterStringConverter = null;
     }
 
-    public void getUserInformation(final InoreaderServiceInterface.IRequestListener<UserInfo> listener) {
+    public Call<UserInfo> getUserInformation() {
 
 
-        getService().getUserInfo(new Callback<UserInfo>() {
-            @Override
-            public void success(UserInfo photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+       return getService().getUserInfo();
     }
 
-    public void removeSourceFromCat( String sourceId, String categoryId, final InoreaderServiceInterface.IRequestListener<String> listener) {
+    public Call<String> removeSourceFromCat( String sourceId, String categoryId) {
 
 
-        getServiceStringConverter().removeSourceFromCat(sourceId, categoryId, new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+        return getServiceString().removeSourceFromCat(sourceId, categoryId);
     }
 
-    public void unsubscribeSource( String sourceId, final InoreaderServiceInterface.IRequestListener<String> listener) {
+    public Call<String> unsubscribeSource( String sourceId) {
 
 
-        getServiceStringConverter().unsubscribeSource(sourceId, new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+        return getServiceString().unsubscribeSource(sourceId);
     }
 
-    public void deleteCategory( String categoryId, final InoreaderServiceInterface.IRequestListener<String> listener) {
+    public Call<String> deleteCategory( String categoryId) {
 
 
-        getServiceStringConverter().deleteCategory(categoryId, new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+        return getServiceString().deleteCategory(categoryId);
     }
 
-    public void moveSource( String sourceId, String removeCategory, String addActegory, final InoreaderServiceInterface.IRequestListener<String> listener) {
+    public Call<String> moveSource( String sourceId, String removeCategory, String addActegory) {
 
 
-        getServiceStringConverter().moveSource(sourceId, removeCategory, addActegory, new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-                listener.onSuccess(photosResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+       return getServiceString().moveSource(sourceId, removeCategory, addActegory);
     }
 
-    public void markAsRead(List<String> articles, Callback<String> listener) {
+    public Call<String> markAsRead(List<String> articles) {
 
 
 
-        getServiceStringConverter().markAsRead(getParams(articles), listener);
+        return getServiceString().markAsRead(getParams(articles));
 
     }
 
@@ -286,55 +216,29 @@ public class InoreaderService {
         return params;
     }
 
-    public void markAsUnread(List<String> articles, Callback<String> listener) {
+    public Call<String> markAsUnread(List<String> articles) {
 
-        getServiceStringConverter().markAsUnread(getParams(articles), listener);
+        return getServiceString().markAsUnread(getParams(articles));
     }
 
-    public void markAsReadBefore(long timestamp, String uniqueId, Callback<String> listener) {
+    public Call<String> markAsReadBefore(long timestamp, String uniqueId) {
 
-        getServiceStringConverter().markAsReadBefore(timestamp, uniqueId, listener);
+       return getServiceString().markAsReadBefore(timestamp, uniqueId);
     }
 
-    public void markAsSaved(List<String> articles) {
+    public Call<String> markAsSaved(List<String> articles) {
 
-        getServiceStringConverter().markAsSaved(getParams(articles), new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-            }
-        });
+        return getServiceString().markAsSaved(getParams(articles));
     }
 
-    public void markAsUnsaved(List<String> articles) {
+    public Call<String> markAsUnsaved(List<String> articles) {
 
-        getServiceStringConverter().markAsUnsaved(getParams(articles), new Callback<String>() {
-            @Override
-            public void success(String photosResponse, Response response) {
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-            }
-        });
+        return getServiceString().markAsUnsaved(getParams(articles));
     }
 
-    public void addSubscription(String sourceId, final InoreaderServiceInterface.IRequestListener<AddSubscriptionResponse> listener) {
+    public Call<AddSubscriptionResponse> addSubscription(String sourceId) {
 
 
-        getService().addSubscription(sourceId, new Callback<AddSubscriptionResponse>() {
-            @Override
-            public void success(AddSubscriptionResponse addSubscriptionResponse, Response response) {
-                listener.onSuccess(addSubscriptionResponse);
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                listener.onFailure(retrofitError);
-            }
-        });
+        return getService().addSubscription(sourceId);
     }
 }

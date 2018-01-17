@@ -56,6 +56,11 @@ public class TwitterProvider extends PalabreExtension {
 
         AccessToken accessToken = new AccessToken(accessTokenString, accessTokenSecret);
         TwitterUtil.getInstance().setTwitterFactory(accessToken);
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         publishUpdateStatus(new ExtensionUpdateStatus().progress(5));
 
