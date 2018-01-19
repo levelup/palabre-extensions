@@ -27,5 +27,6 @@
     <string name="refresh_error_connection">Unable to refresh.\nPlease verify your connection</string>
     <string name="intent_error">Palabre is not installed, this app requires Palabre to run.</string>
 
-    <string name="auth_explanation"><![CDATA[Unfortunately, because <a href="https://www.inoreader.com/developers/auth#comment-1909435054">Inoreader does not allow it</a>, it\'s not possible for the app to log with Google or Facebook.\nTo be able to log in if you are using this kind of account, please go to your <a href="http://inoreader.com">profile settings</a> and set a password.]]></string>
+    <string name="auth_explanation">Please log in with your Inoreader account</string>
+    <string name="no_browser">No Internet browser installed. Please install one.</string>
 </resources>

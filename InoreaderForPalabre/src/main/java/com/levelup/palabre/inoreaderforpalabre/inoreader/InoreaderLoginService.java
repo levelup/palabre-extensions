@@ -1,19 +1,23 @@
 package com.levelup.palabre.inoreaderforpalabre.inoreader;
 
 import android.content.Context;
+import android.preference.PreferenceManager;
+
+import com.levelup.palabre.inoreaderforpalabre.core.SharedPreferenceKeys;
+import com.levelup.palabre.inoreaderforpalabre.inoreader.data.auth.OAuthToken;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Retrofit;
-import retrofit2.converter.scalars.ScalarsConverterFactory;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class InoreaderLoginService {
 
 
     private static final String TAG = InoreaderLoginService.class.getSimpleName();
-    public static final String API_ENDPOINT = "https://www.inoreader.com/accounts/";
+    public static final String API_ENDPOINT = "https://www.inoreader.com/oauth2/";
     private static InoreaderLoginService INSTANCE;
     private final Context context;
     private Retrofit mRestAdapter;
@@ -24,7 +28,7 @@ public class InoreaderLoginService {
 
 
     public static InoreaderLoginService getInstance(Context context) {
-        if (INSTANCE == null) INSTANCE = new InoreaderLoginService(context);
+        if (INSTANCE == null) INSTANCE = new InoreaderLoginService(context.getApplicationContext());
         return INSTANCE;
     }
 
@@ -47,7 +51,7 @@ public class InoreaderLoginService {
 
             Retrofit.Builder builder = new Retrofit.Builder()
                     .baseUrl(API_ENDPOINT)
-                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .addConverterFactory(GsonConverterFactory.create())
                     .client(httpClient.build());
 
             mRestAdapter = builder.build();
@@ -60,13 +64,15 @@ public class InoreaderLoginService {
 
 
 
-    public Call<String> login(String username, String password) {
+    public Call<OAuthToken> login(String code) {
+        return getService().login(code, "palabre-inoreader://auth", InoreaderKeys.APP_ID, InoreaderKeys.APP_KEY, "", "authorization_code");
+    }
+
+    public Call<OAuthToken> refreshToken() {
+        String refreshToken = PreferenceManager.getDefaultSharedPreferences(context).getString(SharedPreferenceKeys.REFRESH_TOKEN, "");
 
 
-
-
-
-        return getService().login(username, password);
+        return getService().refreshToken(refreshToken, InoreaderKeys.APP_ID, InoreaderKeys.APP_KEY, "refresh_token");
     }
 
 
