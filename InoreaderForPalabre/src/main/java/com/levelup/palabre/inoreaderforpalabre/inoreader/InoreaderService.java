@@ -118,10 +118,11 @@ public class InoreaderService {
         token = settings.getString(SharedPreferenceKeys.TOKEN, "");
 
 
-        httpClient.networkInterceptors().add(new Interceptor() {
+        httpClient.interceptors().add(new Interceptor() {
             @Override
             public Response intercept(Chain chain) throws IOException {
-                Request.Builder requestBuilder = chain.request().newBuilder();
+                final Request originalRequest = chain.request();
+                Request.Builder requestBuilder = originalRequest.newBuilder();
 
                 if (!TextUtils.isEmpty(accessToken)) {
                     if (BuildConfig.DEBUG) Log.d(TAG, "Using access token");
@@ -135,7 +136,24 @@ public class InoreaderService {
                 }
 
 
-                return chain.proceed(requestBuilder.build());
+                Response origResponse = chain.proceed(requestBuilder.build());
+
+
+                if (origResponse.code() == 403) {
+
+                    refreshToken();
+
+                    // make a new request with the new token
+                    Request newAuthenticationRequest = originalRequest.newBuilder()
+                            .addHeader("Authorization", "Bearer " + accessToken)
+                            .build();
+
+                    // try again
+
+                    return chain.proceed(newAuthenticationRequest);
+                } else {
+                    return origResponse;
+                }
             }
         });
 
@@ -178,8 +196,8 @@ public class InoreaderService {
 
             if (response.isSuccessful()) {
                 if (BuildConfig.DEBUG) Log.d(TAG, "TOKEN REFRESHED");
-                accessToken = response.body().getAccessToken();
                 final OAuthToken oAuthToken = response.body();
+                accessToken = oAuthToken.getAccessToken();
 
 
                 if (BuildConfig.DEBUG) Log.d(TAG, "Expires in: " + oAuthToken.getExpiresIn());
